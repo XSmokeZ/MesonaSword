@@ -1,0 +1,11 @@
+{
+  "parent": "minecraft:item/handheld",
+  "textures": {
+    "layer0": "mesona_sword:item/layer_0",
+    "layer1": "mesona_sword:item/layer_1"
+  },
+  "loader": "mesona_sword:cosmic",
+  "cosmic": {
+    "mask": "mesona_sword:mask/mesona_sword_mask"
+  }
+}

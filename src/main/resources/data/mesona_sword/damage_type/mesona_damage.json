@@ -1,0 +1,7 @@
+{
+  "message_id": "mesona_damage",
+  "scaling": "never",
+  "exhaustion": 0.0,
+  "effects": "hurt",
+  "death_message_type": "intentional_game_design"
+}

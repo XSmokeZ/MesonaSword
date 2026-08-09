@@ -1,0 +1,24 @@
+// E:\Project\MesonaSword\src\main\java\me\mesona\mesona_sword\MesonaSword.java
+package me.mesona.mesona_sword;
+
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.damagesource.DamageType;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.common.Mod;
+
+@Mod(MesonaSword.MODID)
+public class MesonaSword {
+    public static final String MODID = "mesona_sword";
+    public static final ResourceKey<DamageType> MESONA_DAMAGE =
+            ResourceKey.create(Registries.DAMAGE_TYPE, ResourceLocation.fromNamespaceAndPath(MODID, "mesona_damage"));
+
+    public MesonaSword(IEventBus modEventBus) {
+        GrassSwordItem.ITEMS.register(modEventBus);
+    }
+
+    public static ResourceLocation rl(String path) {
+        return ResourceLocation.fromNamespaceAndPath(MODID, path);
+    }
+}
