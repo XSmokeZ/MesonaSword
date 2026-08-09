@@ -1,5 +1,6 @@
 package me.mesona.mesona_sword;
 
+import me.mesona.mesona_sword.utils.ModTier;
 import net.minecraft.advancements.CriteriaTriggers;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
@@ -43,14 +44,14 @@ public class GrassSwordItem extends SwordItem {
         super(
                 Tiers.NETHERITE,
                 new Properties()
-                        .rarity(Rarity.RARE)
-                        .stacksTo(1)
-                        .fireResistant()
                         .attributes(createAttributes(
-                                Tiers.NETHERITE,
+                                ModTier.MESONA,
                                 Float.POSITIVE_INFINITY,
                                 0
                         ))
+                        .rarity(Rarity.EPIC)
+                        .stacksTo(1)
+                        .fireResistant()
                         .durability(0)
         );
     }
@@ -126,7 +127,7 @@ public class GrassSwordItem extends SwordItem {
      * @param livingEntity 玩家
      * @param victim       被攻击者
      */
-    public static void sweepAttack(Level level, LivingEntity livingEntity, Entity victim) {
+    private static void sweepAttack(Level level, LivingEntity livingEntity, Entity victim) {
         if (livingEntity instanceof Player player) {
             for (LivingEntity livingentity : level.getEntitiesOfClass(LivingEntity.class, player.getItemInHand(InteractionHand.MAIN_HAND).getSweepHitBox(player, victim))) {
                 double entityReachSq = Mth.square(player.entityInteractionRange()); // Use entity reach instead of constant 9.0. Vanilla uses bottom center-to-center checks here, so don't update this to use canReach, since it uses closest-corner checks.
@@ -143,7 +144,7 @@ public class GrassSwordItem extends SwordItem {
             }
         }
     }
-    public static boolean hurt(LivingEntity victim, DamageSource pSource, float pAmount) {
+    private static boolean hurt(LivingEntity victim, DamageSource pSource, float pAmount) {
         if (victim.level().isClientSide || victim.isDeadOrDying()) {
             return false;
         } else {
@@ -239,7 +240,7 @@ public class GrassSwordItem extends SwordItem {
         }
 
     }
-    public static void die(LivingEntity victim, DamageSource pDamageSource) {
+    private static void die(LivingEntity victim, DamageSource pDamageSource) {
         if (!victim.isRemoved() && !victim.dead) {
             Entity entity = pDamageSource.getEntity();
             LivingEntity livingentity = victim.getKillCredit();
@@ -267,7 +268,7 @@ public class GrassSwordItem extends SwordItem {
             victim.setPose(Pose.DYING);
         }
     }
-    protected static void createWitherRose(LivingEntity victim, @Nullable LivingEntity pEntitySource) {
+    private static void createWitherRose(LivingEntity victim, @Nullable LivingEntity pEntitySource) {
         if (!victim.level().isClientSide) {
             boolean flag = false;
             if (pEntitySource instanceof WitherBoss) {
