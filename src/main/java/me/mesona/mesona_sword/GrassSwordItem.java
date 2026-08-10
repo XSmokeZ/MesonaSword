@@ -81,28 +81,6 @@ public class GrassSwordItem extends SwordItem {
     }
 
     @Override
-    public boolean hurtEnemy(ItemStack stack, LivingEntity target, LivingEntity attacker) {
-
-        var registry = attacker.level().registryAccess()
-                .registryOrThrow(Registries.DAMAGE_TYPE);
-        var damageTypeHolder = registry.getHolderOrThrow(MesonaSword.MESONA_DAMAGE);
-
-        DamageSource source = new DamageSource(
-                damageTypeHolder,
-                attacker,
-                attacker,
-                attacker.position()
-        );
-
-        target.hurt(source, Float.POSITIVE_INFINITY);
-        target.setHealth(0);
-        target.kill();
-        target.die(source);
-
-        return true;
-    }
-
-    @Override
     public boolean isFoil(@NotNull ItemStack stack) {
         return false;
     }
