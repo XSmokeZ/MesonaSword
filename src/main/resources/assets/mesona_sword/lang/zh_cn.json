@@ -1,3 +1,6 @@
 {
-  "item.mesona_sword.mesona_sword": "§a凉粉草"
+  "item.mesona_sword.mesona_sword": "§a凉粉草",
+  "tooltip.mesona_sword.infinity": "无限",
+  "tooltip.mesona_sword.attack_damage.desc": "攻击伤害",
+  "tooltip.mesona_sword.description": "一个可以造成无限伤害的剑"
 }

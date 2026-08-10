@@ -1,7 +1,9 @@
 package me.mesona.mesona_sword;
 
 import me.mesona.mesona_sword.utils.ModTier;
+import me.mesona.mesona_sword.utils.TextUtils;
 import net.minecraft.advancements.CriteriaTriggers;
+import net.minecraft.client.resources.language.I18n;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
@@ -94,6 +96,7 @@ public class GrassSwordItem extends SwordItem {
 
         target.hurt(source, Float.POSITIVE_INFINITY);
         target.setHealth(0);
+        target.kill();
         target.die(source);
 
         return true;
@@ -117,7 +120,7 @@ public class GrassSwordItem extends SwordItem {
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context,
                                 List<Component> tooltipComponents, TooltipFlag flag) {
-        tooltipComponents.add(Component.literal("我的自定义提示"));
+        tooltipComponents.add(Component.literal(TextUtils.makeFabulous(I18n.get("tooltip.mesona_sword.description"))));
     }
 
     /**

@@ -1,3 +1,6 @@
 {
-  "item.mesona_sword.mesona_sword": "§aGrass Sword"
+  "item.mesona_sword.mesona_sword": "§aGrass Sword",
+  "tooltip.mesona_sword.infinity": "Infinity",
+  "tooltip.mesona_sword.attack_damage.desc": "Attack Damage",
+  "tooltip.mesona_sword.description": "A sword that can deal infinite damage"
 }
