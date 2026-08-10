@@ -124,9 +124,9 @@ public class GrassSwordItem extends SwordItem {
             setMode(stack, nextMode);
 
             // 向玩家发送提示
-            player.sendSystemMessage(
+            player.displayClientMessage(
                     Component.literal("§a[凉粉草] §f已切换至")
-                            .append(currentMode.getName()).withStyle(currentMode.getColor())
+                            .append(nextMode.getName()).withStyle(nextMode.getColor()), true
             );
 
             // 播放音效
