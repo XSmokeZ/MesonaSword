@@ -2,7 +2,7 @@
   "item.mesona_sword.mesona_sword": "§a凉粉草",
   "tooltip.mesona_sword.infinity": "无限",
   "tooltip.mesona_sword.attack_damage.desc": "攻击伤害",
-  "tooltip.mesona_sword.desc": "§7这是地上的一株草§r",
+  "tooltip.mesona_sword.desc": "§7这是一株草§r ",
   "tooltip.mesona_sword.display_shift": "§7按住§r§e[Shift]§r§7显示更多信息§r",
   "tooltip.mesona_sword.has_shift_down": "本是地上的一株草，因缘分而被你发现"
 }

@@ -1,11 +1,14 @@
 package me.mesona.mesona_sword;
 
+import me.mesona.mesona_sword.utils.ModDataComponents;
 import me.mesona.mesona_sword.utils.ModTier;
 import me.mesona.mesona_sword.utils.TextUtils;
+import net.minecraft.ChatFormatting;
 import net.minecraft.advancements.CriteriaTriggers;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
@@ -13,6 +16,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.boss.enderdragon.EnderDragon;
 import net.minecraft.server.level.ServerLevel;
@@ -38,6 +42,36 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 
 public class GrassSwordItem extends SwordItem {
+
+    public enum SwordMode {
+        NORMAL("普通模式", ChatFormatting.GREEN),
+        SWEEP("横扫模式", ChatFormatting.YELLOW),
+        EXECUTE("处决模式", ChatFormatting.DARK_RED);
+
+        private final String name;
+        private final ChatFormatting color;
+
+        // 缓存数组，避免每次 next() 都重新拷贝
+        private static final SwordMode[] VALUES = values();
+
+        SwordMode(String name, ChatFormatting color) {
+            this.name = name;
+            this.color = color;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public ChatFormatting getColor() {
+            return color;
+        }
+
+        public SwordMode next() {
+            return VALUES[(ordinal() + 1) % values().length];
+        }
+    }
+
     public static final DeferredRegister.Items ITEMS =
             DeferredRegister.createItems(MesonaSword.MODID);
     public static final DeferredItem<GrassSwordItem> MESONA_SWORD = ITEMS.register("mesona_sword", GrassSwordItem::new);
@@ -81,12 +115,29 @@ public class GrassSwordItem extends SwordItem {
     }
 
     @Override
-    public boolean isFoil(@NotNull ItemStack stack) {
-        return false;
+    public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
+        ItemStack stack = player.getItemInHand(hand);
+        // 仅在服务端切换模式
+        if(!level.isClientSide && player.isShiftKeyDown()) {
+            SwordMode currentMode = getMode(stack);
+            SwordMode nextMode = currentMode.next();
+            setMode(stack, nextMode);
+
+            // 向玩家发送提示
+            player.sendSystemMessage(
+                    Component.literal("§a[凉粉草] §f已切换至")
+                            .append(currentMode.getName()).withStyle(currentMode.getColor())
+            );
+
+            // 播放音效
+            level.playSound(null, player.getX(), player.getY(), player.getZ(),
+                    SoundEvents.NOTE_BLOCK_PLING, player.getSoundSource(), 1.0F, 1.0F);
+        }
+        return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
     }
 
     @Override
-    public boolean isEnchantable(@NotNull ItemStack stack) {
+    public boolean isFoil(@NotNull ItemStack stack) {
         return false;
     }
 
@@ -98,10 +149,11 @@ public class GrassSwordItem extends SwordItem {
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context,
                                 List<Component> tooltipComponents, TooltipFlag flag) {
+        SwordMode currentMode = getMode(stack);
         if(flag.hasShiftDown()) {
             tooltipComponents.add(Component.literal(TextUtils.makeFabulous(I18n.get("tooltip.mesona_sword.has_shift_down"))));
         } else {
-            tooltipComponents.add(Component.literal(I18n.get("tooltip.mesona_sword.desc")));
+            tooltipComponents.add(Component.literal(I18n.get("tooltip.mesona_sword.desc")).append(Component.literal(currentMode.getName()).withStyle(currentMode.getColor())));
             tooltipComponents.add(Component.literal(I18n.get("tooltip.mesona_sword.display_shift")));
         }
     }
@@ -113,7 +165,7 @@ public class GrassSwordItem extends SwordItem {
      * @param livingEntity 玩家
      * @param victim       被攻击者
      */
-    private static void sweepAttack(Level level, LivingEntity livingEntity, Entity victim) {
+    private void sweepAttack(Level level, LivingEntity livingEntity, Entity victim) {
         if (livingEntity instanceof Player player) {
             for (LivingEntity livingentity : level.getEntitiesOfClass(LivingEntity.class, player.getItemInHand(InteractionHand.MAIN_HAND).getSweepHitBox(player, victim))) {
                 double entityReachSq = Mth.square(player.entityInteractionRange()); // Use entity reach instead of constant 9.0. Vanilla uses bottom center-to-center checks here, so don't update this to use canReach, since it uses closest-corner checks.
@@ -130,7 +182,7 @@ public class GrassSwordItem extends SwordItem {
             }
         }
     }
-    private static boolean hurt(LivingEntity victim, DamageSource pSource, float pAmount) {
+    private boolean hurt(LivingEntity victim, DamageSource pSource, float pAmount) {
         if (victim.level().isClientSide || victim.isDeadOrDying()) {
             return false;
         } else {
@@ -226,7 +278,7 @@ public class GrassSwordItem extends SwordItem {
         }
 
     }
-    private static void die(LivingEntity victim, DamageSource pDamageSource) {
+    private void die(LivingEntity victim, DamageSource pDamageSource) {
         if (!victim.isRemoved() && !victim.dead) {
             Entity entity = pDamageSource.getEntity();
             LivingEntity livingentity = victim.getKillCredit();
@@ -254,7 +306,7 @@ public class GrassSwordItem extends SwordItem {
             victim.setPose(Pose.DYING);
         }
     }
-    private static void createWitherRose(LivingEntity victim, @Nullable LivingEntity pEntitySource) {
+    private void createWitherRose(LivingEntity victim, @Nullable LivingEntity pEntitySource) {
         if (!victim.level().isClientSide) {
             boolean flag = false;
             if (pEntitySource instanceof WitherBoss) {
@@ -273,5 +325,15 @@ public class GrassSwordItem extends SwordItem {
             }
 
         }
+    }
+    private SwordMode getMode(ItemStack stack) {
+        Integer modeIndex = stack.get(ModDataComponents.SWORD_MODE.get());
+        if(modeIndex != null && modeIndex >= 0 && modeIndex < SwordMode.VALUES.length) {
+            return SwordMode.values()[modeIndex];
+        }
+        return SwordMode.NORMAL;
+    }
+    private void setMode(ItemStack stack, SwordMode mode) {
+        stack.set(ModDataComponents.SWORD_MODE.get(), mode.ordinal());
     }
 }

@@ -1,6 +1,7 @@
 // E:\Project\MesonaSword\src\main\java\me\mesona\mesona_sword\MesonaSword.java
 package me.mesona.mesona_sword;
 
+import me.mesona.mesona_sword.utils.ModDataComponents;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -16,6 +17,7 @@ public class MesonaSword {
 
     public MesonaSword(IEventBus modEventBus) {
         GrassSwordItem.ITEMS.register(modEventBus);
+        ModDataComponents.COMPONENTS.register(modEventBus);
     }
 
     public static ResourceLocation rl(String path) {

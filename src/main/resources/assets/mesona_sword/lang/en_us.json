@@ -2,7 +2,7 @@
   "item.mesona_sword.mesona_sword": "§aGrass Sword",
   "tooltip.mesona_sword.infinity": "Infinity",
   "tooltip.mesona_sword.attack_damage.desc": "Attack Damage",
-  "tooltip.mesona_sword.desc": "§7This is a grass§r",
+  "tooltip.mesona_sword.desc": "§7This is a grass§r ",
   "tooltip.mesona_sword.display_shift": "§7Hold§r §e[Shift]§r §7to show more information§r",
   "tooltip.mesona_sword.has_shift_down": "This is a grass, found by you"
 }
