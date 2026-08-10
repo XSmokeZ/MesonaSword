@@ -98,7 +98,12 @@ public class GrassSwordItem extends SwordItem {
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context,
                                 List<Component> tooltipComponents, TooltipFlag flag) {
-        tooltipComponents.add(Component.literal(TextUtils.makeFabulous(I18n.get("tooltip.mesona_sword.description"))));
+        if(flag.hasShiftDown()) {
+            tooltipComponents.add(Component.literal(TextUtils.makeFabulous(I18n.get("tooltip.mesona_sword.has_shift_down"))));
+        } else {
+            tooltipComponents.add(Component.literal(I18n.get("tooltip.mesona_sword.desc")));
+            tooltipComponents.add(Component.literal(I18n.get("tooltip.mesona_sword.display_shift")));
+        }
     }
 
     /**
