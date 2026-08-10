@@ -7,8 +7,6 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.advancements.CriteriaTriggers;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.registries.Registries;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
@@ -39,11 +37,15 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collections;
 import java.util.List;
 
 public class GrassSwordItem extends SwordItem {
 
-    public enum SwordMode {
+    /**
+     * 剑的攻击模式枚举
+     */
+    private enum SwordMode {
         NORMAL("普通模式", ChatFormatting.GREEN),
         SWEEP("横扫模式", ChatFormatting.YELLOW),
         EXECUTE("处决模式", ChatFormatting.DARK_RED);
@@ -53,6 +55,12 @@ public class GrassSwordItem extends SwordItem {
 
         // 缓存数组，避免每次 next() 都重新拷贝
         private static final SwordMode[] VALUES = values();
+        private static final Component[] DESCRIPTION = new Component[]{
+                Component.empty(),
+                Component.literal("普通模式").withStyle(ChatFormatting.GREEN).append(Component.literal(" 造成接近无穷的伤害").withStyle(ChatFormatting.WHITE)),
+                Component.literal("横扫模式").withStyle(ChatFormatting.YELLOW).append(Component.literal(" 造成大面积的虚空伤害").withStyle(ChatFormatting.WHITE)),
+                Component.literal("处决模式").withStyle(ChatFormatting.DARK_RED).append(Component.literal(" 直接调用kill命令").withStyle(ChatFormatting.WHITE))
+        };
 
         SwordMode(String name, ChatFormatting color) {
             this.name = name;
@@ -72,6 +80,7 @@ public class GrassSwordItem extends SwordItem {
         }
     }
 
+    // 注册器
     public static final DeferredRegister.Items ITEMS =
             DeferredRegister.createItems(MesonaSword.MODID);
     public static final DeferredItem<GrassSwordItem> MESONA_SWORD = ITEMS.register("mesona_sword", GrassSwordItem::new);
@@ -92,10 +101,12 @@ public class GrassSwordItem extends SwordItem {
         );
     }
 
+    // 攻击逻辑重写
     @Override
     public boolean onLeftClickEntity(@NotNull ItemStack stack, Player player, @NotNull Entity entity) {
-        var level = player.level();
-        if (!level.isClientSide && level instanceof ServerLevel serverLevel && entity instanceof LivingEntity victim) {
+        Level level = player.level();
+        SwordMode mode = getMode(stack);
+        if (mode == SwordMode.EXECUTE && !level.isClientSide && level instanceof ServerLevel serverLevel && entity instanceof LivingEntity victim) {
             var damageSource = player.damageSources().source(MesonaSword.MESONA_DAMAGE, victim, player);
             sweepAttack(serverLevel, player, victim);//横扫
             if (victim instanceof EnderDragon dragon ) {
@@ -114,6 +125,7 @@ public class GrassSwordItem extends SwordItem {
         return false;
     }
 
+    // 用于切换模式
     @Override
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
@@ -132,26 +144,31 @@ public class GrassSwordItem extends SwordItem {
             // 播放音效
             level.playSound(null, player.getX(), player.getY(), player.getZ(),
                     SoundEvents.NOTE_BLOCK_PLING, player.getSoundSource(), 1.0F, 1.0F);
+            return InteractionResultHolder.sidedSuccess(stack, false);
         }
-        return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
+        return InteractionResultHolder.pass(stack);
     }
 
+    // 无附魔光效
     @Override
     public boolean isFoil(@NotNull ItemStack stack) {
         return false;
     }
 
+    // 不需要维修
     @Override
     public boolean isRepairable(@NotNull ItemStack stack) {
         return false;
     }
 
+    // 添加描述文本
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context,
                                 List<Component> tooltipComponents, TooltipFlag flag) {
         SwordMode currentMode = getMode(stack);
         if(flag.hasShiftDown()) {
             tooltipComponents.add(Component.literal(TextUtils.makeFabulous(I18n.get("tooltip.mesona_sword.has_shift_down"))));
+            Collections.addAll(tooltipComponents, SwordMode.DESCRIPTION);
         } else {
             tooltipComponents.add(Component.literal(I18n.get("tooltip.mesona_sword.desc")).append(Component.literal(currentMode.getName()).withStyle(currentMode.getColor())));
             tooltipComponents.add(Component.literal(I18n.get("tooltip.mesona_sword.display_shift")));
@@ -182,9 +199,16 @@ public class GrassSwordItem extends SwordItem {
             }
         }
     }
-    private boolean hurt(LivingEntity victim, DamageSource pSource, float pAmount) {
+
+    /**
+     * 伤害函数
+     *
+     * @param victim  受害者
+     * @param pSource 伤害源
+     * @param pAmount 伤害量
+     */
+    private void hurt(LivingEntity victim, DamageSource pSource, float pAmount) {
         if (victim.level().isClientSide || victim.isDeadOrDying()) {
-            return false;
         } else {
             if (victim.isMultipartEntity()) {
                 for (Entity part :victim.getParts()) {
@@ -274,10 +298,16 @@ public class GrassSwordItem extends SwordItem {
                 CriteriaTriggers.PLAYER_HURT_ENTITY.trigger((ServerPlayer)entity1, victim, pSource, pAmount, pAmount, flag);
             }
 
-            return flag2;
         }
 
     }
+
+    /**
+     * 死亡修正函数
+     *
+     * @param victim        受害者
+     * @param pDamageSource 伤害量
+     */
     private void die(LivingEntity victim, DamageSource pDamageSource) {
         if (!victim.isRemoved() && !victim.dead) {
             Entity entity = pDamageSource.getEntity();
@@ -306,6 +336,13 @@ public class GrassSwordItem extends SwordItem {
             victim.setPose(Pose.DYING);
         }
     }
+
+    /**
+     * 凋零玫瑰生成修正
+     *
+     * @param victim        受害者
+     * @param pEntitySource 攻击的实体源
+     */
     private void createWitherRose(LivingEntity victim, @Nullable LivingEntity pEntitySource) {
         if (!victim.level().isClientSide) {
             boolean flag = false;
@@ -326,6 +363,13 @@ public class GrassSwordItem extends SwordItem {
 
         }
     }
+
+    /**
+     * 获取攻击模式组件
+     *
+     * @param stack 这把剑的物品
+     * @return      攻击模式
+     */
     private SwordMode getMode(ItemStack stack) {
         Integer modeIndex = stack.get(ModDataComponents.SWORD_MODE.get());
         if(modeIndex != null && modeIndex >= 0 && modeIndex < SwordMode.VALUES.length) {
@@ -333,6 +377,13 @@ public class GrassSwordItem extends SwordItem {
         }
         return SwordMode.NORMAL;
     }
+
+    /**
+     * 设置攻击模式组件
+     *
+     * @param stack 这把剑的物品
+     * @param mode  设置的攻击模式
+     */
     private void setMode(ItemStack stack, SwordMode mode) {
         stack.set(ModDataComponents.SWORD_MODE.get(), mode.ordinal());
     }
