@@ -48,7 +48,7 @@ public class GrassSwordItem extends SwordItem {
     /**
      * 剑的攻击模式枚举
      */
-    enum SwordMode {
+    public enum SwordMode {
         NORMAL("普通模式", ChatFormatting.GREEN),
         SWEEP("横扫模式", ChatFormatting.YELLOW),
         EXECUTE("处决模式", ChatFormatting.DARK_RED);
@@ -116,6 +116,7 @@ public class GrassSwordItem extends SwordItem {
                 }
                 case SWEEP -> {
                     sweepDamage(serverLevel, player, victim);
+                    return false;
                 }
                 case EXECUTE -> {
                     var damageSource = player.damageSources().source(MesonaSword.MESONA_DAMAGE, victim, player);
@@ -132,6 +133,7 @@ public class GrassSwordItem extends SwordItem {
                         player.killedEntity(serverLevel, victim);//添加至信息统计
                         //player.getCombatTracker().recordDamage(damageSource, victim.getHealth());//添加至伤害记录
                     }
+                    return true;
                 }
             }
         }
@@ -220,11 +222,22 @@ public class GrassSwordItem extends SwordItem {
      * @param sourceEntity  玩家
      * @param centerEntity  中心实体
      */
-    static void sweepDamage(Level level, LivingEntity sourceEntity, Entity centerEntity) {
+    public static void sweepDamage(Level level, LivingEntity sourceEntity, Entity centerEntity) {
         if (sourceEntity instanceof Player player) {
-            // 检测范围：以player为中心，半径 8 格的球形范围
+
+            // 检测范围：以centerEntity为中心，半径 8 格的球形范围
             double sweepRange = 8.0;
-            AABB sweepArea = player.getBoundingBox().inflate(sweepRange, sweepRange, sweepRange);
+
+            // 以实体位置为中心
+            double centerX = centerEntity.getX();
+            double centerY = centerEntity.getY() + centerEntity.getEyeHeight() * 0.5; // 取身体中部
+            double centerZ = centerEntity.getZ();
+
+            // 构建范围
+            AABB sweepArea = new AABB(
+                    centerX - sweepRange, centerY - sweepRange, centerZ - sweepRange,
+                    centerX + sweepRange, centerY + sweepRange, centerZ + sweepRange
+            );
 
             for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, sweepArea)) {
                 // 排除自己和盟友
@@ -428,7 +441,7 @@ public class GrassSwordItem extends SwordItem {
      * @param stack 这把剑的物品
      * @return      攻击模式
      */
-    SwordMode getMode(ItemStack stack) {
+    public SwordMode getMode(ItemStack stack) {
         Integer modeIndex = stack.get(ModDataComponents.SWORD_MODE.get());
         if(modeIndex != null && modeIndex >= 0 && modeIndex < SwordMode.VALUES.length) {
             return SwordMode.values()[modeIndex];

@@ -1,6 +1,7 @@
 // E:\Project\MesonaSword\src\main\java\me\mesona\mesona_sword\MesonaSword.java
 package me.mesona.mesona_sword;
 
+import me.mesona.mesona_sword.network.SweepAttackPacket;
 import me.mesona.mesona_sword.utils.ModDataComponents;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
@@ -8,6 +9,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.damagesource.DamageType;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.common.Mod;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 
 @Mod(MesonaSword.MODID)
 public class MesonaSword {
@@ -18,9 +20,15 @@ public class MesonaSword {
     public MesonaSword(IEventBus modEventBus) {
         GrassSwordItem.ITEMS.register(modEventBus);
         ModDataComponents.COMPONENTS.register(modEventBus);
+        modEventBus.addListener(this::registerPackets);
     }
 
     public static ResourceLocation rl(String path) {
         return ResourceLocation.fromNamespaceAndPath(MODID, path);
+    }
+
+    private void registerPackets(RegisterPayloadHandlersEvent event) {
+        event.registrar("1")
+                .playToServer(SweepAttackPacket.TYPE, SweepAttackPacket.STREAM_CODEC, SweepAttackPacket::handle);
     }
 }
