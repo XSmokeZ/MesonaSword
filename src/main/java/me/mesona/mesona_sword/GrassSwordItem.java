@@ -31,6 +31,8 @@ import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.gameevent.GameEvent;
+import net.minecraft.world.phys.AABB;
+import net.neoforged.neoforge.common.Tags;
 import net.neoforged.neoforge.entity.PartEntity;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -39,13 +41,14 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Consumer;
 
 public class GrassSwordItem extends SwordItem {
 
     /**
      * 剑的攻击模式枚举
      */
-    private enum SwordMode {
+    enum SwordMode {
         NORMAL("普通模式", ChatFormatting.GREEN),
         SWEEP("横扫模式", ChatFormatting.YELLOW),
         EXECUTE("处决模式", ChatFormatting.DARK_RED);
@@ -58,7 +61,7 @@ public class GrassSwordItem extends SwordItem {
         private static final Component[] DESCRIPTION = new Component[]{
                 Component.empty(),
                 Component.literal("普通模式").withStyle(ChatFormatting.GREEN).append(Component.literal(" 造成接近无穷的伤害").withStyle(ChatFormatting.WHITE)),
-                Component.literal("横扫模式").withStyle(ChatFormatting.YELLOW).append(Component.literal(" 造成大面积的虚空伤害").withStyle(ChatFormatting.WHITE)),
+                Component.literal("横扫模式").withStyle(ChatFormatting.YELLOW).append(Component.literal(" 造成大范围的虚空伤害").withStyle(ChatFormatting.WHITE)),
                 Component.literal("处决模式").withStyle(ChatFormatting.DARK_RED).append(Component.literal(" 直接调用kill命令").withStyle(ChatFormatting.WHITE))
         };
 
@@ -87,7 +90,7 @@ public class GrassSwordItem extends SwordItem {
 
     public GrassSwordItem() {
         super(
-                Tiers.NETHERITE,
+                ModTier.MESONA,
                 new Properties()
                         .attributes(createAttributes(
                                 ModTier.MESONA,
@@ -97,7 +100,6 @@ public class GrassSwordItem extends SwordItem {
                         .rarity(Rarity.EPIC)
                         .stacksTo(1)
                         .fireResistant()
-                        .durability(0)
         );
     }
 
@@ -106,23 +108,40 @@ public class GrassSwordItem extends SwordItem {
     public boolean onLeftClickEntity(@NotNull ItemStack stack, Player player, @NotNull Entity entity) {
         Level level = player.level();
         SwordMode mode = getMode(stack);
-        if (mode == SwordMode.EXECUTE && !level.isClientSide && level instanceof ServerLevel serverLevel && entity instanceof LivingEntity victim) {
-            var damageSource = player.damageSources().source(MesonaSword.MESONA_DAMAGE, victim, player);
-            sweepAttack(serverLevel, player, victim);//横扫
-            if (victim instanceof EnderDragon dragon ) {
-                dragon.hurt(dragon.head, damageSource, Float.POSITIVE_INFINITY);
-            } else {
-                hurt(victim, damageSource, Float.POSITIVE_INFINITY);
-            }
+        if (!level.isClientSide && level instanceof ServerLevel serverLevel && entity instanceof LivingEntity victim) {
+            // 分析攻击模式
+            switch (mode) {
+                case NORMAL -> {
+                    return false;
+                }
+                case SWEEP -> {
+                    sweepDamage(serverLevel, player, victim);
+                }
+                case EXECUTE -> {
+                    var damageSource = player.damageSources().source(MesonaSword.MESONA_DAMAGE, victim, player);
+                    sweepAttack(serverLevel, player, victim);//横扫
+                    if (victim instanceof EnderDragon dragon ) {
+                        dragon.hurt(dragon.head, damageSource, Float.POSITIVE_INFINITY);
+                    } else {
+                        hurt(victim, damageSource, Float.POSITIVE_INFINITY);
+                    }
 
-            if (!victim.isDeadOrDying()) {
-                victim.setHealth(0);//设置血量为零
-                this.die(victim, damageSource);//修正设置死亡
-                player.killedEntity(serverLevel, victim);//添加至信息统计
-                //player.getCombatTracker().recordDamage(damageSource, victim.getHealth());//添加至伤害记录
+                    if (!victim.isDeadOrDying()) {
+                        victim.setHealth(0);//设置血量为零
+                        this.die(victim, damageSource);//修正设置死亡
+                        player.killedEntity(serverLevel, victim);//添加至信息统计
+                        //player.getCombatTracker().recordDamage(damageSource, victim.getHealth());//添加至伤害记录
+                    }
+                }
             }
         }
         return false;
+    }
+
+    // 防止被配了（bushi
+    @Override
+    public boolean hurtEnemy(ItemStack stack, LivingEntity victim, LivingEntity attacker) {
+        return true;
     }
 
     // 用于切换模式
@@ -155,12 +174,6 @@ public class GrassSwordItem extends SwordItem {
         return false;
     }
 
-    // 不需要维修
-    @Override
-    public boolean isRepairable(@NotNull ItemStack stack) {
-        return false;
-    }
-
     // 添加描述文本
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context,
@@ -176,7 +189,7 @@ public class GrassSwordItem extends SwordItem {
     }
 
     /**
-     * 横扫攻击
+     * 横扫击退
      *
      * @param level        世界
      * @param livingEntity 玩家
@@ -196,6 +209,51 @@ public class GrassSwordItem extends SwordItem {
             double d1 = Mth.cos(player.getYRot() * ((float) Math.PI / 180F));
             if (level instanceof ServerLevel serverLevel) {
                 serverLevel.sendParticles(ParticleTypes.SWEEP_ATTACK, player.getX() + d0, player.getY(0.5D), player.getZ() + d1, 0, d0, 0.0D, d1, 0.0D);
+            }
+        }
+    }
+
+    /**
+     * 横扫伤害
+     * 
+     * @param level         世界
+     * @param sourceEntity  玩家
+     * @param centerEntity  中心实体
+     */
+    static void sweepDamage(Level level, LivingEntity sourceEntity, Entity centerEntity) {
+        if (sourceEntity instanceof Player player) {
+            // 检测范围：以player为中心，半径 8 格的球形范围
+            double sweepRange = 8.0;
+            AABB sweepArea = player.getBoundingBox().inflate(sweepRange, sweepRange, sweepRange);
+
+            for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, sweepArea)) {
+                // 排除自己和盟友
+                if (target == player || target == centerEntity) continue;
+                if (player.isAlliedTo(target)) continue;
+                if (target instanceof ArmorStand armorStand && armorStand.isMarker()) continue;
+
+                // 距离检查（球形）
+                if (player.distanceToSqr(target) > sweepRange * sweepRange) continue;
+
+                // 造成范围伤害
+                float sweepDamage = 200.0F; // 横扫伤害值
+                target.hurt(level.damageSources().fellOutOfWorld(), sweepDamage);
+
+                // 击退效果
+                target.knockback(0.6F,
+                    Mth.sin(player.getYRot() * ((float) Math.PI / 180F)),
+                    -Mth.cos(player.getYRot() * ((float) Math.PI / 180F)));
+            }
+
+            // 播放横扫音效和粒子
+            level.playSound(null, player.getX(), player.getY(), player.getZ(),
+                SoundEvents.PLAYER_ATTACK_SWEEP, player.getSoundSource(), 1.0F, 1.0F);
+            double d0 = -Mth.sin(player.getYRot() * ((float) Math.PI / 180F));
+            double d1 = Mth.cos(player.getYRot() * ((float) Math.PI / 180F));
+            if (level instanceof ServerLevel serverLevel) {
+                serverLevel.sendParticles(ParticleTypes.SWEEP_ATTACK,
+                    player.getX() + d0, player.getY(0.5D), player.getZ() + d1,
+                    0, d0, 0.0D, d1, 0.0D);
             }
         }
     }
@@ -370,7 +428,7 @@ public class GrassSwordItem extends SwordItem {
      * @param stack 这把剑的物品
      * @return      攻击模式
      */
-    private SwordMode getMode(ItemStack stack) {
+    SwordMode getMode(ItemStack stack) {
         Integer modeIndex = stack.get(ModDataComponents.SWORD_MODE.get());
         if(modeIndex != null && modeIndex >= 0 && modeIndex < SwordMode.VALUES.length) {
             return SwordMode.values()[modeIndex];
