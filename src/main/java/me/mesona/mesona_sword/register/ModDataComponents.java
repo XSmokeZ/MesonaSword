@@ -1,4 +1,4 @@
-package me.mesona.mesona_sword.utils;
+package me.mesona.mesona_sword.register;
 
 import com.mojang.serialization.Codec;
 import me.mesona.mesona_sword.MesonaSword;

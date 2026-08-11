@@ -1,8 +1,7 @@
-// E:\Project\MesonaSword\src\main\java\me\mesona\mesona_sword\MesonaSword.java
 package me.mesona.mesona_sword;
 
 import me.mesona.mesona_sword.network.SweepAttackPacket;
-import me.mesona.mesona_sword.utils.ModDataComponents;
+import me.mesona.mesona_sword.register.ModDataComponents;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;

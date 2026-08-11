@@ -6,6 +6,7 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 public record SweepAttackPacket() implements CustomPacketPayload {
@@ -26,7 +27,8 @@ public record SweepAttackPacket() implements CustomPacketPayload {
             if (!(context.player() instanceof ServerPlayer player)) return;
 
             // 服务端验证：必须主手持草剑
-            if (!(player.getMainHandItem().getItem() instanceof GrassSwordItem sword)) return;
+            ItemStack stack = player.getMainHandItem();
+            if (!(stack.getItem() instanceof GrassSwordItem sword)) return;
 
             // 服务端验证：必须是横扫模式
             if (sword.getMode(player.getMainHandItem()) != GrassSwordItem.SwordMode.SWEEP) return;
@@ -35,7 +37,7 @@ public record SweepAttackPacket() implements CustomPacketPayload {
 //            if (player.getAttackStrengthScale(0.5F) < 0.9F) return;
 
             // 执行横扫
-            GrassSwordItem.sweepDamage(player.level(), player, player);
+            GrassSwordItem.sweepDamage(player.level(), player, player, stack);
         });
     }
 }
