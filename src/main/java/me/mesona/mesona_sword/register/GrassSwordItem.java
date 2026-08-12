@@ -87,12 +87,16 @@ public class GrassSwordItem extends SwordItem {
     private static final ResourceLocation REACH_MODIFIER = ResourceLocation.fromNamespaceAndPath(MesonaSword.MODID, "execute_reach");
 
     private static final HowToHurt[] methodToHurt = new HowToHurt[]{
-            ((source, victim) -> victim.hurt(source, 1145141919)),      // 大数字
-            ((source, victim) -> victim.kill()),                                 // 尝试直接kill
+            ((source, victim) -> victim.hurt(source, 1145141)),      // 大数字
             ((source, victim) -> hurt(victim, source, Float.MAX_VALUE)),         // 重写伤害逻辑
+            ((source, victim) -> hurt(victim, source, Float.POSITIVE_INFINITY)), // 重写伤害逻辑
             ((source, victim) -> {victim.setHealth(0);die(victim, source);}),    // 尝试改血
+            ((source, victim) -> victim.hurt(victim.level().damageSources().fellOutOfWorld(), Float.POSITIVE_INFINITY)),
+            ((source, victim) -> victim.hurt(victim.damageSources().genericKill(), Float.POSITIVE_INFINITY)),
+            ((source, victim) -> victim.kill()),                                 // 尝试直接kill
             ((source, victim) -> {victim.remove(Entity.RemovalReason.KILLED);victim.gameEvent(GameEvent.ENTITY_DIE);}),  // 尝试直接删了
-            ((source, victim) -> victim.discard())                               // 点击输入文本
+            ((source, victim) -> victim.discard()),                               // 点击输入文本
+            ((source, victim) -> victim.remove(Entity.RemovalReason.DISCARDED))
     };
 
     // 注册器
@@ -136,7 +140,7 @@ public class GrassSwordItem extends SwordItem {
                 case EXECUTE -> {
                     var damageSource = player.damageSources().source(MesonaSword.MESONA_DAMAGE, victim, player);
 
-                    if (victim.isDeadOrDying()) {
+                    if (!victim.isDeadOrDying()) {
                         stack.hurtAndBreak(5, player, player.getEquipmentSlotForItem(stack));   // 消耗耐久
                         spawnExecuteParticles(serverLevel, victim);     //处决模式：生成樱花花瓣和落叶粒子效果
                     }
