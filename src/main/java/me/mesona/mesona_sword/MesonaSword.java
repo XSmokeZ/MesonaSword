@@ -1,6 +1,7 @@
 package me.mesona.mesona_sword;
 
 import me.mesona.mesona_sword.network.SweepAttackPacket;
+import me.mesona.mesona_sword.network.SweepEffectBatchPacket;
 import me.mesona.mesona_sword.register.GrassSwordItem;
 import me.mesona.mesona_sword.register.ModDataComponents;
 import net.minecraft.core.registries.Registries;
@@ -27,8 +28,10 @@ public class MesonaSword {
         return ResourceLocation.fromNamespaceAndPath(MODID, path);
     }
 
+    // 注册网络包
     private void registerPackets(RegisterPayloadHandlersEvent event) {
-        event.registrar("1")
-                .playToServer(SweepAttackPacket.TYPE, SweepAttackPacket.STREAM_CODEC, SweepAttackPacket::handle);
+        event.registrar("0.2")
+                .playToServer(SweepAttackPacket.TYPE, SweepAttackPacket.STREAM_CODEC, SweepAttackPacket::handle)
+                .playToClient(SweepEffectBatchPacket.TYPE, SweepEffectBatchPacket.STREAM_CODEC, SweepEffectBatchPacket::handle);
     }
 }

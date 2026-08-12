@@ -82,7 +82,7 @@ public class GrassSwordItem extends SwordItem {
     }
 
     // 属性
-    private static final ResourceLocation EXECUTE_REACH_MODIFIER = ResourceLocation.fromNamespaceAndPath(MesonaSword.MODID, "execute_reach");
+    private static final ResourceLocation REACH_MODIFIER = ResourceLocation.fromNamespaceAndPath(MesonaSword.MODID, "execute_reach");
 
     // 注册器
     public static final DeferredRegister.Items ITEMS =
@@ -124,11 +124,12 @@ public class GrassSwordItem extends SwordItem {
                 }
                 case EXECUTE -> {
                     var damageSource = player.damageSources().source(MesonaSword.MESONA_DAMAGE, victim, player);
-                    sweepAttack(serverLevel, player, victim);   //横扫
+                    sweepAttack(serverLevel, player, victim);   //击退
 
-                    // 消耗耐久
-                    if (!victim.isDeadOrDying())
-                        stack.hurtAndBreak(5, player, player.getEquipmentSlotForItem(stack));
+                    if (!victim.isDeadOrDying()) {
+                        stack.hurtAndBreak(5, player, player.getEquipmentSlotForItem(stack));   // 消耗耐久
+                        spawnExecuteParticles(serverLevel, victim);     //处决模式：生成樱花花瓣和落叶粒子效果
+                    }
 
                     if (victim instanceof EnderDragon dragon) {
                         dragon.hurt(dragon.head, damageSource, Float.POSITIVE_INFINITY);
@@ -142,7 +143,6 @@ public class GrassSwordItem extends SwordItem {
                         player.killedEntity(serverLevel, victim);   //添加至信息统计
                         //player.getCombatTracker().recordDamage(damageSource, victim.getHealth()); //添加至伤害记录
                     }
-
 
                     return true;
                 }
@@ -188,15 +188,15 @@ public class GrassSwordItem extends SwordItem {
             SwordMode mode = getMode(stack);
             var attr = living.getAttribute(Attributes.ENTITY_INTERACTION_RANGE);
             if (attr != null) {
-                boolean hasModifier = attr.getModifier(EXECUTE_REACH_MODIFIER) != null;
+                boolean hasModifier = attr.getModifier(REACH_MODIFIER) != null;
                 if (isSelected && mode == SwordMode.EXECUTE) {
                     if (!hasModifier) {
                         attr.addTransientModifier(new AttributeModifier(
-                            EXECUTE_REACH_MODIFIER, 5.5, AttributeModifier.Operation.ADD_VALUE
+                                REACH_MODIFIER, 5.5, AttributeModifier.Operation.ADD_VALUE
                         ));
                     }
                 } else if (hasModifier) {
-                    attr.removeModifier(EXECUTE_REACH_MODIFIER);
+                    attr.removeModifier(REACH_MODIFIER);
                 }
             }
         }
@@ -238,12 +238,6 @@ public class GrassSwordItem extends SwordItem {
                     livingentity.knockback(0.6F, Mth.sin(player.getYRot() * ((float) Math.PI / 180F)), -Mth.cos(player.getYRot() * ((float) Math.PI / 180F)));
                 }
             }
-            level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.PLAYER_ATTACK_SWEEP, player.getSoundSource(), 1.0F, 1.0F);
-            double d0 = -Mth.sin(player.getYRot() * ((float) Math.PI / 180F));
-            double d1 = Mth.cos(player.getYRot() * ((float) Math.PI / 180F));
-//            if (level instanceof ServerLevel serverLevel) {
-//                serverLevel.sendParticles(ParticleTypes.SWEEP_ATTACK, player.getX() + d0, player.getY(0.5D), player.getZ() + d1, 0, d0, 0.0D, d1, 0.0D);
-//            }
         }
     }
 
@@ -257,12 +251,11 @@ public class GrassSwordItem extends SwordItem {
     public static void sweepDamage(Level level, LivingEntity sourceEntity, Entity centerEntity, ItemStack stack) {
         if (sourceEntity instanceof Player player && !level.isClientSide) {
 
-            // 检测范围：以centerEntity为中心，半径 8 格的球形范围
-            double sweepRange = 8.0;
+            double sweepRange = 8.0;        // 攻击半径
 
-            // 以实体位置为中心
+            // 设置中心位置
             double centerX = centerEntity.getX();
-            double centerY = centerEntity.getY() + centerEntity.getEyeHeight() * 0.5; // 取身体中部
+            double centerY = centerEntity.getY() + centerEntity.getEyeHeight();
             double centerZ = centerEntity.getZ();
 
             // 构建范围
@@ -272,45 +265,92 @@ public class GrassSwordItem extends SwordItem {
             );
 
             int damageCount = 0;
+            boolean flag = false;
+            java.util.List<me.mesona.mesona_sword.network.SweepEffectBatchPacket.EffectData> effectList = new java.util.ArrayList<>();
 
             for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, sweepArea)) {
-                // 排除自己和队友
-                if (target == player || target == centerEntity) continue;
-                if (player.isAlliedTo(target)) continue;
-                if (target instanceof ArmorStand armorStand && armorStand.isMarker()) continue;
-                if (target.isDeadOrDying()) continue;
 
-                // 距离检查（球形）
-                if (player.distanceToSqr(target) > sweepRange * sweepRange) continue;
+                if (player.isAlliedTo(target) ||
+                    player.distanceToSqr(target) > sweepRange * sweepRange ||
+                    target == player ||
+                    target instanceof ArmorStand armorStand && armorStand.isMarker() ||     // 防止友伤
+                    target.isDeadOrDying()                                                  // 距离检查
+                    ) continue;
 
-                // 造成范围伤害
-                float sweepDamage = 200.0F; // 伤害值
-                target.hurt(player.damageSources().fellOutOfWorld(), sweepDamage);
+                target.hurt(player.damageSources().fellOutOfWorld(), 200.0F);      // 造成伤害
+                flag = true;
 
-                // 击退效果
                 target.knockback(0.6F,
                     Mth.sin(player.getYRot() * ((float) Math.PI / 180F)),
-                    -Mth.cos(player.getYRot() * ((float) Math.PI / 180F)));
+                    -Mth.cos(player.getYRot() * ((float) Math.PI / 180F)));           // 击退
 
                 // 统计要消耗的耐久
                 if(damageCount < 20)
                     damageCount++;
-            }
 
-            // 消耗耐久
-            stack.hurtAndBreak(damageCount, player, player.getEquipmentSlotForItem(stack));
+                /* 以下是粒子逻辑 */
+                /* Start */
 
-            // 播放横扫音效和粒子
-            level.playSound(null, player.getX(), player.getY(), player.getZ(),
-                SoundEvents.PLAYER_ATTACK_SWEEP, player.getSoundSource(), 1.0F, 1.0F);
-            double d0 = -Mth.sin(player.getYRot() * ((float) Math.PI / 180F));
-            double d1 = Mth.cos(player.getYRot() * ((float) Math.PI / 180F));
-            if (level instanceof ServerLevel serverLevel) {
-                serverLevel.sendParticles(ParticleTypes.SWEEP_ATTACK,
-                    centerEntity.getX() + d0, centerEntity.getY(0.5D), centerEntity.getZ() + d1,
-                    0, d0, 0.0D, d1, 0.0D);
+                // 收集数据
+                float randomYaw = player.level().getRandom().nextFloat() * 360f;
+                float scale = (float) ((target.getBbWidth() + target.getBbHeight()));
+                effectList.add(new me.mesona.mesona_sword.network.SweepEffectBatchPacket.EffectData(
+                    target.getX(), target.getY(), target.getZ(), randomYaw, scale));
             }
+            // 发送数据
+            if (!effectList.isEmpty()) {
+                ((ServerPlayer) player).connection.send(
+                    new me.mesona.mesona_sword.network.SweepEffectBatchPacket(effectList));
+            }
+            /* End */
+
+            stack.hurtAndBreak(damageCount, player, player.getEquipmentSlotForItem(stack));          // 消耗耐久
+
+            if (flag) level.playSound(null, player.getX(), player.getY(), player.getZ(),    // 播放音效
+                    SoundEvents.WARDEN_DEATH, player.getSoundSource(), 1.0F, 1.0F);
         }
+    }
+
+    /**
+     * 处决模式粒子效果
+     * 在生物死亡位置生成樱花花瓣
+     */
+    private static void spawnExecuteParticles(ServerLevel level, LivingEntity victim) {
+        double x = victim.getX();
+        double y = victim.getY() + victim.getBbHeight() * 0.5;
+        double z = victim.getZ();
+
+        // 樱花花瓣 - 粉色飘落效果
+        level.sendParticles(
+            ParticleTypes.CHERRY_LEAVES,
+            x, y, z,
+            50,  // 数量
+            victim.getBbWidth() * 0.5,  // X偏移范围
+            victim.getBbHeight() * 0.5, // Y偏移范围
+            victim.getBbWidth() * 0.5,  // Z偏移范围
+            0.05  // 速度
+        );
+
+        level.sendParticles(
+            ParticleTypes.FALLING_WATER,
+            x, y, z,
+            30,  // 数量
+            victim.getBbWidth() * 0.3,
+            victim.getBbHeight() * 0.3,
+            victim.getBbWidth() * 0.3,
+            0.03
+        );
+
+        // 额外的白色花瓣效果
+        level.sendParticles(
+            ParticleTypes.EFFECT,  // 药水粒子，白色星点
+            x, y + 0.5, z,
+            20,
+            victim.getBbWidth() * 0.4,
+            victim.getBbHeight() * 0.4,
+            victim.getBbWidth() * 0.4,
+            0.02
+        );
     }
 
     /**
