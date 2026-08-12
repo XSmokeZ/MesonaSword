@@ -1,6 +1,7 @@
 package me.mesona.mesona_sword.register;
 
 import me.mesona.mesona_sword.MesonaSword;
+import me.mesona.mesona_sword.network.SweepEffectBatchPacket;
 import me.mesona.mesona_sword.utils.TextUtils;
 import net.minecraft.ChatFormatting;
 import net.minecraft.advancements.CriteriaTriggers;
@@ -38,6 +39,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -84,6 +86,15 @@ public class GrassSwordItem extends SwordItem {
     // 属性
     private static final ResourceLocation REACH_MODIFIER = ResourceLocation.fromNamespaceAndPath(MesonaSword.MODID, "execute_reach");
 
+    private static final HowToHurt[] methodToHurt = new HowToHurt[]{
+            ((source, victim) -> victim.hurt(source, 1145141919)),      // 大数字
+            ((source, victim) -> victim.kill()),                                 // 尝试直接kill
+            ((source, victim) -> hurt(victim, source, Float.MAX_VALUE)),         // 重写伤害逻辑
+            ((source, victim) -> {victim.setHealth(0);die(victim, source);}),    // 尝试改血
+            ((source, victim) -> {victim.remove(Entity.RemovalReason.KILLED);victim.gameEvent(GameEvent.ENTITY_DIE);}),  // 尝试直接删了
+            ((source, victim) -> victim.discard())                               // 点击输入文本
+    };
+
     // 注册器
     public static final DeferredRegister.Items ITEMS =
             DeferredRegister.createItems(MesonaSword.MODID);
@@ -98,7 +109,7 @@ public class GrassSwordItem extends SwordItem {
                 new Properties()
                         .attributes(createAttributes(
                                 ModTier.MESONA,
-                                Float.POSITIVE_INFINITY,
+                                Float.MAX_VALUE,
                                 0
                         ))
                         .rarity(Rarity.EPIC)
@@ -124,24 +135,20 @@ public class GrassSwordItem extends SwordItem {
                 }
                 case EXECUTE -> {
                     var damageSource = player.damageSources().source(MesonaSword.MESONA_DAMAGE, victim, player);
-                    sweepAttack(serverLevel, player, victim);   //击退
 
-                    if (!victim.isDeadOrDying()) {
+                    if (victim.isDeadOrDying()) {
                         stack.hurtAndBreak(5, player, player.getEquipmentSlotForItem(stack));   // 消耗耐久
                         spawnExecuteParticles(serverLevel, victim);     //处决模式：生成樱花花瓣和落叶粒子效果
                     }
 
                     if (victim instanceof EnderDragon dragon) {
-                        dragon.hurt(dragon.head, damageSource, Float.POSITIVE_INFINITY);
-                    } else {
-                        hurt(victim, damageSource, Float.POSITIVE_INFINITY);
+                        dragon.hurt(dragon.head, damageSource, Float.MAX_VALUE);
                     }
 
-                    if (!victim.isDeadOrDying()) {
-                        victim.setHealth(0);    //设置血量为零
-                        this.die(victim, damageSource); //修正设置死亡
-                        player.killedEntity(serverLevel, victim);   //添加至信息统计
-                        //player.getCombatTracker().recordDamage(damageSource, victim.getHealth()); //添加至伤害记录
+                    /* 尝试多种击杀方法 */
+                    for (HowToHurt how : methodToHurt) {
+                        if (victim.isDeadOrDying()) break;
+                        how.hurt(damageSource, victim);
                     }
 
                     return true;
@@ -224,24 +231,6 @@ public class GrassSwordItem extends SwordItem {
     }
 
     /**
-     * 横扫击退
-     *
-     * @param level        世界
-     * @param livingEntity 玩家
-     * @param victim       被攻击者
-     */
-    private void sweepAttack(Level level, LivingEntity livingEntity, Entity victim) {
-        if (livingEntity instanceof Player player) {
-            for (LivingEntity livingentity : level.getEntitiesOfClass(LivingEntity.class, player.getItemInHand(InteractionHand.MAIN_HAND).getSweepHitBox(player, victim))) {
-                double entityReachSq = Mth.square(player.entityInteractionRange()); // Use entity reach instead of constant 9.0. Vanilla uses bottom center-to-center checks here, so don't update this to use canReach, since it uses closest-corner checks.
-                if (!player.isAlliedTo(livingentity) && (!(livingentity instanceof ArmorStand) || !((ArmorStand) livingentity).isMarker()) && player.distanceToSqr(livingentity) < entityReachSq) {
-                    livingentity.knockback(0.6F, Mth.sin(player.getYRot() * ((float) Math.PI / 180F)), -Mth.cos(player.getYRot() * ((float) Math.PI / 180F)));
-                }
-            }
-        }
-    }
-
-    /**
      * 横扫伤害
      * 
      * @param level         世界
@@ -266,7 +255,7 @@ public class GrassSwordItem extends SwordItem {
 
             int damageCount = 0;
             boolean flag = false;
-            java.util.List<me.mesona.mesona_sword.network.SweepEffectBatchPacket.EffectData> effectList = new java.util.ArrayList<>();
+            List<SweepEffectBatchPacket.EffectData> effectList = new ArrayList<>();
 
             for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, sweepArea)) {
 
@@ -294,13 +283,13 @@ public class GrassSwordItem extends SwordItem {
                 // 收集数据
                 float randomYaw = player.level().getRandom().nextFloat() * 360f;
                 float scale = (float) ((target.getBbWidth() + target.getBbHeight()));
-                effectList.add(new me.mesona.mesona_sword.network.SweepEffectBatchPacket.EffectData(
+                effectList.add(new SweepEffectBatchPacket.EffectData(
                     target.getX(), target.getY(), target.getZ(), randomYaw, scale));
             }
             // 发送数据
             if (!effectList.isEmpty()) {
                 ((ServerPlayer) player).connection.send(
-                    new me.mesona.mesona_sword.network.SweepEffectBatchPacket(effectList));
+                    new SweepEffectBatchPacket(effectList));
             }
             /* End */
 
@@ -360,7 +349,7 @@ public class GrassSwordItem extends SwordItem {
      * @param pSource 伤害源
      * @param pAmount 伤害量
      */
-    private void hurt(LivingEntity victim, DamageSource pSource, float pAmount) {
+    private static void hurt(LivingEntity victim, DamageSource pSource, float pAmount) {
 
         // 不在客户端处理，同时不要鞭尸
         if (victim.level().isClientSide || victim.isDeadOrDying()) return;
@@ -468,7 +457,7 @@ public class GrassSwordItem extends SwordItem {
      * @param victim        受害者
      * @param pDamageSource 伤害量
      */
-    private void die(LivingEntity victim, DamageSource pDamageSource) {
+    private static void die(LivingEntity victim, DamageSource pDamageSource) {
         if (!victim.isRemoved() && !victim.dead) {
             Entity entity = pDamageSource.getEntity();
             LivingEntity livingentity = victim.getKillCredit();
@@ -487,40 +476,12 @@ public class GrassSwordItem extends SwordItem {
                 if (entity == null || entity.killedEntity(serverlevel, victim)) {
                     victim.gameEvent(GameEvent.ENTITY_DIE);
                     victim.dropAllDeathLoot(serverlevel, pDamageSource);
-                    createWitherRose(victim, livingentity);
                 }
 
                 victim.level().broadcastEntityEvent(victim, (byte) 3);
             }
 
             victim.setPose(Pose.DYING);
-        }
-    }
-
-    /**
-     * 凋零玫瑰生成修正
-     *
-     * @param victim        受害者
-     * @param pEntitySource 攻击的实体源
-     */
-    private void createWitherRose(LivingEntity victim, @Nullable LivingEntity pEntitySource) {
-        if (!victim.level().isClientSide) {
-            boolean flag = false;
-            if (pEntitySource instanceof WitherBoss) {
-                BlockPos blockpos = victim.blockPosition();
-                BlockState blockstate = Blocks.WITHER_ROSE.defaultBlockState();
-                if (victim.level().isEmptyBlock(blockpos) && blockstate.canSurvive(victim.level(), blockpos)) {
-                    victim.level().setBlock(blockpos, blockstate, 3);
-                    flag = true;
-                }
-
-
-                if (!flag) {
-                    ItemEntity itementity = new ItemEntity(victim.level(), victim.getX(), victim.getY(), victim.getZ(), new ItemStack(Items.WITHER_ROSE));
-                    victim.level().addFreshEntity(itementity);
-                }
-            }
-
         }
     }
 
@@ -546,5 +507,10 @@ public class GrassSwordItem extends SwordItem {
      */
     private void setMode(ItemStack stack, SwordMode mode) {
         stack.set(ModDataComponents.SWORD_MODE.get(), mode.ordinal());
+    }
+
+    @FunctionalInterface
+    private interface HowToHurt {
+        void hurt(DamageSource source, LivingEntity victim);
     }
 }

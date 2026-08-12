@@ -11,7 +11,7 @@ public final class ModTier {
             BlockTags.AIR,
             1145,
             0,
-            Float.POSITIVE_INFINITY,
+            0,
             100,
             () -> Ingredient.of(
                     Items.SHORT_GRASS,
