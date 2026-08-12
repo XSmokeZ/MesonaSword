@@ -1,6 +1,7 @@
 package me.mesona.mesona_sword;
 
 import me.mesona.mesona_sword.network.SweepAttackPacket;
+import me.mesona.mesona_sword.register.GrassSwordItem;
 import me.mesona.mesona_sword.register.ModDataComponents;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;

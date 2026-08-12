@@ -1,7 +1,7 @@
 package me.mesona.mesona_sword.network;
 
 import io.netty.buffer.ByteBuf;
-import me.mesona.mesona_sword.GrassSwordItem;
+import me.mesona.mesona_sword.register.GrassSwordItem;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;

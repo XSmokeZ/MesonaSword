@@ -1,6 +1,6 @@
 package me.mesona.mesona_sword.client;
 
-import me.mesona.mesona_sword.GrassSwordItem;
+import me.mesona.mesona_sword.register.GrassSwordItem;
 import me.mesona.mesona_sword.MesonaSword;
 import me.mesona.mesona_sword.api.client.render.CosmicRenderQueue;
 import me.mesona.mesona_sword.client.model.CosmicModelLoader;

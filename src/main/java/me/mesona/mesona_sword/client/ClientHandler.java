@@ -1,7 +1,8 @@
-package me.mesona.mesona_sword.register;
+package me.mesona.mesona_sword.client;
 
 import me.mesona.mesona_sword.MesonaSword;
 import me.mesona.mesona_sword.network.SweepAttackPacket;
+import me.mesona.mesona_sword.register.GrassSwordItem;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -19,7 +20,7 @@ public class ClientHandler {
 
         // 客户端只检测是否主手持草剑，然后发包
         // 所有权限验证在服务端处理
-        if (player.getMainHandItem().getItem() instanceof me.mesona.mesona_sword.GrassSwordItem) {
+        if (player.getMainHandItem().getItem() instanceof GrassSwordItem) {
             PacketDistributor.sendToServer(new SweepAttackPacket());
         }
     }
@@ -31,7 +32,7 @@ public class ClientHandler {
 
         // 客户端只检测是否主手持草剑，然后发包
         // 所有权限验证在服务端处理
-        if (player.getMainHandItem().getItem() instanceof me.mesona.mesona_sword.GrassSwordItem) {
+        if (player.getMainHandItem().getItem() instanceof GrassSwordItem) {
             PacketDistributor.sendToServer(new SweepAttackPacket());
         }
     }

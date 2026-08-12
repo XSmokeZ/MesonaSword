@@ -1,7 +1,6 @@
-package me.mesona.mesona_sword;
+package me.mesona.mesona_sword.register;
 
-import me.mesona.mesona_sword.register.ModDataComponents;
-import me.mesona.mesona_sword.register.ModTier;
+import me.mesona.mesona_sword.MesonaSword;
 import me.mesona.mesona_sword.utils.TextUtils;
 import net.minecraft.ChatFormatting;
 import net.minecraft.advancements.CriteriaTriggers;
@@ -239,9 +238,9 @@ public class GrassSwordItem extends SwordItem {
                     livingentity.knockback(0.6F, Mth.sin(player.getYRot() * ((float) Math.PI / 180F)), -Mth.cos(player.getYRot() * ((float) Math.PI / 180F)));
                 }
             }
-//            level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.PLAYER_ATTACK_SWEEP, player.getSoundSource(), 1.0F, 1.0F);
-//            double d0 = -Mth.sin(player.getYRot() * ((float) Math.PI / 180F));
-//            double d1 = Mth.cos(player.getYRot() * ((float) Math.PI / 180F));
+            level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.PLAYER_ATTACK_SWEEP, player.getSoundSource(), 1.0F, 1.0F);
+            double d0 = -Mth.sin(player.getYRot() * ((float) Math.PI / 180F));
+            double d1 = Mth.cos(player.getYRot() * ((float) Math.PI / 180F));
 //            if (level instanceof ServerLevel serverLevel) {
 //                serverLevel.sendParticles(ParticleTypes.SWEEP_ATTACK, player.getX() + d0, player.getY(0.5D), player.getZ() + d1, 0, d0, 0.0D, d1, 0.0D);
 //            }
