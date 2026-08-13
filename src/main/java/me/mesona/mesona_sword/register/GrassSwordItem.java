@@ -2,11 +2,9 @@ package me.mesona.mesona_sword.register;
 
 import me.mesona.mesona_sword.MesonaSword;
 import me.mesona.mesona_sword.network.SweepEffectBatchPacket;
-import me.mesona.mesona_sword.utils.TextUtils;
 import net.minecraft.ChatFormatting;
 import net.minecraft.advancements.CriteriaTriggers;
 import net.minecraft.client.resources.language.I18n;
-import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
@@ -22,22 +20,17 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.boss.enderdragon.EnderDragon;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.damagesource.DamageSource;
-import net.minecraft.world.entity.boss.wither.WitherBoss;
 import net.minecraft.world.entity.decoration.ArmorStand;
-import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.*;
 import net.minecraft.world.level.Level;
 import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.entity.PartEntity;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -49,9 +42,9 @@ public class GrassSwordItem extends SwordItem {
      * 剑的攻击模式枚举
      */
     public enum SwordMode {
-        NORMAL("普通模式", ChatFormatting.GREEN),
-        SWEEP("横扫模式", ChatFormatting.YELLOW),
-        EXECUTE("处决模式", ChatFormatting.DARK_RED);
+        NORMAL("日常模式", ChatFormatting.GREEN),
+        SWEEP("范围模式", ChatFormatting.YELLOW),
+        EXECUTE("抹杀模式", ChatFormatting.DARK_RED);
 
         private final String name;
         private final ChatFormatting color;
@@ -60,9 +53,9 @@ public class GrassSwordItem extends SwordItem {
         private static final SwordMode[] VALUES = values();
         private static final Component[] DESCRIPTION = new Component[]{
                 Component.empty(),
-                Component.literal("普通模式").withStyle(ChatFormatting.GREEN).append(Component.literal(" 造成接近无穷的伤害").withStyle(ChatFormatting.WHITE)),
-                Component.literal("横扫模式").withStyle(ChatFormatting.YELLOW).append(Component.literal(" 造成大范围的虚空伤害").withStyle(ChatFormatting.WHITE)),
-                Component.literal("处决模式").withStyle(ChatFormatting.DARK_RED).append(Component.literal(" 直接调用kill命令").withStyle(ChatFormatting.WHITE))
+                Component.literal("日常模式").withStyle(ChatFormatting.GREEN).append(Component.literal(" 附加生物现有生命值20%的伤害").withStyle(ChatFormatting.WHITE)),
+                Component.literal("范围模式").withStyle(ChatFormatting.YELLOW).append(Component.literal(" 造成大范围的虚空伤害").withStyle(ChatFormatting.WHITE)),
+                Component.literal("抹杀模式").withStyle(ChatFormatting.DARK_RED).append(Component.literal(" 奉天承运，皇帝诏曰……").withStyle(ChatFormatting.WHITE).append(Component.literal("斩").withStyle(ChatFormatting.DARK_RED)))
         };
 
         SwordMode(String name, ChatFormatting color) {
@@ -113,7 +106,7 @@ public class GrassSwordItem extends SwordItem {
                 new Properties()
                         .attributes(createAttributes(
                                 ModTier.MESONA,
-                                Float.MAX_VALUE,
+                                114,
                                 0
                         ))
                         .rarity(Rarity.EPIC)
@@ -138,7 +131,7 @@ public class GrassSwordItem extends SwordItem {
                     return false;
                 }
                 case EXECUTE -> {
-                    var damageSource = player.damageSources().source(MesonaSword.MESONA_DAMAGE, victim, player);
+                    var damageSource = player.damageSources().source(ModDamage.MESONA_DAMAGE, victim, player);
 
                     if (!victim.isDeadOrDying()) {
                         stack.hurtAndBreak(5, player, player.getEquipmentSlotForItem(stack));   // 消耗耐久
@@ -162,9 +155,15 @@ public class GrassSwordItem extends SwordItem {
         return false;
     }
 
-    // 防止被配了（bushi
+    // 这是我瞎写的
     @Override
     public boolean hurtEnemy(ItemStack stack, LivingEntity victim, LivingEntity attacker) {
+        if (getMode(stack) == SwordMode.NORMAL) {
+            float currentHealth = victim.getHealth();
+            float extraDamage = currentHealth * 0.2f;
+            victim.hurt(attacker.damageSources().mobAttack(attacker), extraDamage);
+            attacker.heal(1.0F);
+        }
         return true;
     }
 
@@ -226,7 +225,7 @@ public class GrassSwordItem extends SwordItem {
                                 List<Component> tooltipComponents, TooltipFlag flag) {
         SwordMode currentMode = getMode(stack);
         if(flag.hasShiftDown()) {
-            tooltipComponents.add(Component.literal(TextUtils.makeFabulous(I18n.get("tooltip.mesona_sword.has_shift_down"))));
+            tooltipComponents.add(Component.literal(TextUtil.makeFabulous(I18n.get("tooltip.mesona_sword.has_shift_down"))));
             Collections.addAll(tooltipComponents, SwordMode.DESCRIPTION);
         } else {
             tooltipComponents.add(Component.literal(I18n.get("tooltip.mesona_sword.desc")).append(Component.literal(currentMode.getName()).withStyle(currentMode.getColor())));
@@ -305,7 +304,7 @@ public class GrassSwordItem extends SwordItem {
     }
 
     /**
-     * 处决模式粒子效果
+     * 抹杀模式粒子效果
      * 在生物死亡位置生成樱花花瓣
      */
     private static void spawnExecuteParticles(ServerLevel level, LivingEntity victim) {
@@ -495,8 +494,8 @@ public class GrassSwordItem extends SwordItem {
      * @param stack 这把剑的物品
      * @return      攻击模式
      */
-    public SwordMode getMode(ItemStack stack) {
-        Integer modeIndex = stack.get(ModDataComponents.SWORD_MODE.get());
+    public static SwordMode getMode(ItemStack stack) {
+        Integer modeIndex = stack.get(ModDataComponent.SWORD_MODE.get());
         if(modeIndex != null && modeIndex >= 0 && modeIndex < SwordMode.VALUES.length) {
             return SwordMode.values()[modeIndex];
         }
@@ -510,7 +509,7 @@ public class GrassSwordItem extends SwordItem {
      * @param mode  设置的攻击模式
      */
     private void setMode(ItemStack stack, SwordMode mode) {
-        stack.set(ModDataComponents.SWORD_MODE.get(), mode.ordinal());
+        stack.set(ModDataComponent.SWORD_MODE.get(), mode.ordinal());
     }
 
     @FunctionalInterface

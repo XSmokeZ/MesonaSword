@@ -1,11 +1,11 @@
-package me.mesona.mesona_sword.utils;
+package me.mesona.mesona_sword.register;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.Util;
 
 import static net.minecraft.ChatFormatting.*;
 
-public class TextUtils {
+public class TextUtil {
 
     private static final ChatFormatting[] fabulousness = new ChatFormatting[]{RED, GOLD, YELLOW, GREEN, AQUA, BLUE, LIGHT_PURPLE};
 

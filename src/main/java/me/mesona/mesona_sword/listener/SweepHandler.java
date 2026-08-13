@@ -1,6 +1,7 @@
-package me.mesona.mesona_sword.network;
+package me.mesona.mesona_sword.listener;
 
 import me.mesona.mesona_sword.MesonaSword;
+import me.mesona.mesona_sword.network.SweepAttackPacket;
 import me.mesona.mesona_sword.register.GrassSwordItem;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.api.distmarker.Dist;
@@ -10,7 +11,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 @EventBusSubscriber(modid = MesonaSword.MODID, value = Dist.CLIENT)
-public class ClientHandler {
+public class SweepHandler {
 
     @SubscribeEvent
     public static void onLeftClickEmpty(PlayerInteractEvent.LeftClickEmpty event) {

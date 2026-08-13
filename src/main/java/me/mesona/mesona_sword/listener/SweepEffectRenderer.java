@@ -1,4 +1,4 @@
-package me.mesona.mesona_sword.client.effect;
+package me.mesona.mesona_sword.listener;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
@@ -83,5 +83,30 @@ public class SweepEffectRenderer {
         buffer.addVertex(m,  s,  s, 0).setUv(1, 0);
         buffer.addVertex(m, -s,  s, 0).setUv(0, 0);
         BufferUploader.drawWithShader(buffer.buildOrThrow());
+    }
+}
+
+class SweepEffect {
+    public final Vec3 pos;
+    public final float yaw;
+    public final float scale;
+    public int age;
+    public final int maxAge;
+
+    public SweepEffect(Vec3 pos, float yaw, float scale, int maxAge) {
+        this.pos = pos;
+        this.yaw = yaw;
+        this.scale = scale;
+        this.age = 0;
+        this.maxAge = maxAge;
+    }
+
+    public boolean tick() {
+        age++;
+        return age >= maxAge;
+    }
+
+    public int getFrameIndex(int totalFrames) {
+        return Math.min(age * totalFrames / Math.max(maxAge, 1), totalFrames - 1);
     }
 }
