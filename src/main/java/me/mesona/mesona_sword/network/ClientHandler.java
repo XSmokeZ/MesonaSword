@@ -1,7 +1,6 @@
-package me.mesona.mesona_sword.client;
+package me.mesona.mesona_sword.network;
 
 import me.mesona.mesona_sword.MesonaSword;
-import me.mesona.mesona_sword.network.SweepAttackPacket;
 import me.mesona.mesona_sword.register.GrassSwordItem;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.api.distmarker.Dist;

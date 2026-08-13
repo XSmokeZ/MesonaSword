@@ -5,6 +5,7 @@ import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import me.mesona.mesona_sword.MesonaSword;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -31,7 +32,7 @@ public class MesonaShaders {
     @SubscribeEvent
     public static void onRegisterShaders(RegisterShadersEvent event) {
         try {
-            event.registerShader(new ShaderInstance(event.getResourceProvider(), MesonaSword.rl("cosmic"), DefaultVertexFormat.BLOCK), shader -> {
+            event.registerShader(new ShaderInstance(event.getResourceProvider(), ResourceLocation.fromNamespaceAndPath(MesonaSword.MODID, "cosmic"), DefaultVertexFormat.BLOCK), shader -> {
                 COSMIC_SHADER = shader;
                 cosmicTime = COSMIC_SHADER.getUniform("time");
                 cosmicYaw = COSMIC_SHADER.getUniform("yaw");

@@ -15,7 +15,6 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ModelEvent;
-import net.neoforged.neoforge.client.event.RegisterShadersEvent;
 import net.neoforged.neoforge.client.event.RenderFrameEvent;
 import net.neoforged.neoforge.client.event.TextureAtlasStitchedEvent;
 import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
@@ -45,11 +44,6 @@ public class MesonaSwordClient {
                 }
             }
         }
-    }
-
-    @SubscribeEvent
-    public static void onRegisterShaders(RegisterShadersEvent event) {
-        MesonaShaders.onRegisterShaders(event);
     }
 
     @SubscribeEvent

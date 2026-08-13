@@ -24,10 +24,6 @@ public class MesonaSword {
         modEventBus.addListener(this::registerPackets);
     }
 
-    public static ResourceLocation rl(String path) {
-        return ResourceLocation.fromNamespaceAndPath(MODID, path);
-    }
-
     // 注册网络包
     private void registerPackets(RegisterPayloadHandlersEvent event) {
         event.registrar("0.2")
