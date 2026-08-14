@@ -48,7 +48,7 @@ public class GrassSwordItem extends SwordItem {
     public enum SwordMode {
         NORMAL("日常模式", ChatFormatting.GREEN),
         SWEEP("范围模式", ChatFormatting.YELLOW),
-        EXECUTE("抹杀模式", ChatFormatting.DARK_RED);
+        EXECUTE("幻梦异曲", ChatFormatting.LIGHT_PURPLE);
 
         private final String name;
         private final ChatFormatting color;
@@ -57,9 +57,9 @@ public class GrassSwordItem extends SwordItem {
         private static final SwordMode[] VALUES = values();
         private static final Component[] DESCRIPTION = new Component[]{
                 Component.empty(),
-                Component.literal("日常模式").withStyle(ChatFormatting.GREEN).append(Component.literal(" 附加生命上限20%的百分比伤害").withStyle(ChatFormatting.WHITE)),
-                Component.literal("范围模式").withStyle(ChatFormatting.YELLOW).append(Component.literal(" 造成大范围的虚空伤害").withStyle(ChatFormatting.WHITE)),
-                Component.literal("抹杀模式").withStyle(ChatFormatting.DARK_RED).append(Component.literal(" 奉天承运，皇帝诏曰……").withStyle(ChatFormatting.WHITE).append(Component.literal("斩").withStyle(ChatFormatting.DARK_RED)))
+                Component.literal("日常模式").withStyle(ChatFormatting.GREEN).append(Component.literal(" 在永恒的世间里，这是最纯粹的诗篇").withStyle(ChatFormatting.WHITE)),
+                Component.literal("范围模式").withStyle(ChatFormatting.YELLOW).append(Component.literal(" 然而现实的裂隙毁坏了一切").withStyle(ChatFormatting.WHITE)),
+                Component.literal("幻梦异曲").withStyle(ChatFormatting.LIGHT_PURPLE).append(Component.literal(" 但愿世间一切安享美梦").withStyle(ChatFormatting.WHITE))
         };
 
         SwordMode(String name, ChatFormatting color) {
@@ -104,7 +104,7 @@ public class GrassSwordItem extends SwordItem {
                 new Properties()
                         .attributes(createAttributes(
                                 ModTier.MESONA,
-                                114,
+                                Float.MAX_VALUE,
                                 0
                         ))
                         .rarity(Rarity.EPIC)
@@ -121,34 +121,22 @@ public class GrassSwordItem extends SwordItem {
         if (!level.isClientSide && level instanceof ServerLevel serverLevel && entity instanceof LivingEntity victim) {
             // 分析攻击模式
             switch (mode) {
-                case NORMAL -> {
-                    return super.onLeftClickEntity(stack, player, entity);
-                }
-                case SWEEP -> {
-                    sweepDamage(serverLevel, player, victim, stack);
-                    return super.onLeftClickEntity(stack, player, entity);
-                }
+                case SWEEP -> sweepDamage(serverLevel, player, victim, stack);
                 case EXECUTE -> {
                     var damageSource = player.damageSources().source(ModDamage.MESONA_DAMAGE, victim, player);
 
                     if (!victim.isDeadOrDying()) {
                         stack.hurtAndBreak(5, player, player.getEquipmentSlotForItem(stack));   // 消耗耐久
-                        spawnExecuteParticles(serverLevel, victim);     //处决模式：生成樱花花瓣和落叶粒子效果
+                        spawnExecuteParticles(serverLevel, victim);     // 幻梦异曲：生成樱花花瓣和落叶粒子效果
                     }
 
                     if (victim instanceof EnderDragon dragon) {
                         dragon.hurt(dragon.head, damageSource, Float.MAX_VALUE);
-                    }
-
-                    if (player.isShiftKeyDown())
-                        removeEntity(victim);           // 给你骨灰扬了
-                    else /* 尝试多种击杀方法 */
+                    } else /* 尝试多种击杀方法 */
                         for (HowToHurt how : methodToHurt) {
                             if (victim.isDeadOrDying()) break;
                             how.hurt(damageSource, victim);
                         }
-
-                    return true;
                 }
             }
         }
@@ -170,9 +158,6 @@ public class GrassSwordItem extends SwordItem {
     @Override
     public boolean hurtEnemy(ItemStack stack, LivingEntity victim, LivingEntity attacker) {
         if (getMode(stack) == SwordMode.NORMAL) {
-            float maxHealth = victim.getMaxHealth();
-            float extraDamage = maxHealth * 0.3f;
-            victim.hurt(attacker.damageSources().mobAttack(attacker), extraDamage);
             attacker.heal(1.0F);
         }
         return true;
@@ -190,13 +175,13 @@ public class GrassSwordItem extends SwordItem {
 
             // 向玩家发送提示
             player.displayClientMessage(
-                    Component.literal("§a[凉粉草] §f已切换至")
+                    Component.literal("").append(stack.getDisplayName()).append(" §r§f已切换至")
                             .append(nextMode.getName()).withStyle(nextMode.getColor()), true
             );
 
             // 播放音效
             level.playSound(null, player.getX(), player.getY(), player.getZ(),
-                    SoundEvents.NOTE_BLOCK_PLING, player.getSoundSource(), 1.0F, 1.0F);
+                    SoundEvents.PLAYER_LEVELUP, player.getSoundSource(), 1.0F, 1.0F);
             return InteractionResultHolder.sidedSuccess(stack, false);
         }
         return InteractionResultHolder.pass(stack);
@@ -214,7 +199,7 @@ public class GrassSwordItem extends SwordItem {
                 if (isSelected && mode == SwordMode.EXECUTE) {
                     if (!hasModifier) {
                         attr.addTransientModifier(new AttributeModifier(
-                                REACH_MODIFIER, 12, AttributeModifier.Operation.ADD_VALUE
+                                REACH_MODIFIER, 2, AttributeModifier.Operation.ADD_VALUE
                         ));
                         if (living instanceof Player player) {
                             player.clearFire();
@@ -320,7 +305,7 @@ public class GrassSwordItem extends SwordItem {
     }
 
     /**
-     * 抹杀模式粒子效果
+     * 幻梦模式粒子效果
      * 在生物死亡位置生成樱花花瓣
      */
     private static void spawnExecuteParticles(ServerLevel level, LivingEntity victim) {
@@ -524,6 +509,12 @@ public class GrassSwordItem extends SwordItem {
                 ListHelper.addEntityToList(victim);
         }
     }
+
+    /**
+     * 移除实体函数
+     *
+     * @param living 要移除的实体
+     */
     private void removeEntity(LivingEntity living) {
         living.setPos(-9999,-9999,-9999);
         if (!(living instanceof Player)) {
