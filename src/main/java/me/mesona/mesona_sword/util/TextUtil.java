@@ -1,4 +1,4 @@
-package me.mesona.mesona_sword.register;
+package me.mesona.mesona_sword.util;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.Util;

@@ -2,7 +2,7 @@ package me.mesona.mesona_sword.listener;
 
 
 import me.mesona.mesona_sword.register.GrassSwordItem;
-import me.mesona.mesona_sword.register.TextUtil;
+import me.mesona.mesona_sword.util.TextUtil;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.network.chat.Component;

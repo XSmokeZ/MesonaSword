@@ -2,6 +2,8 @@ package me.mesona.mesona_sword.register;
 
 import me.mesona.mesona_sword.MesonaSword;
 import me.mesona.mesona_sword.network.SweepEffectBatchPacket;
+import me.mesona.mesona_sword.util.ListHelper;
+import me.mesona.mesona_sword.util.TextUtil;
 import net.minecraft.ChatFormatting;
 import net.minecraft.advancements.CriteriaTriggers;
 import net.minecraft.client.resources.language.I18n;
@@ -55,7 +57,7 @@ public class GrassSwordItem extends SwordItem {
         private static final SwordMode[] VALUES = values();
         private static final Component[] DESCRIPTION = new Component[]{
                 Component.empty(),
-                Component.literal("日常模式").withStyle(ChatFormatting.GREEN).append(Component.literal(" 附加生物现有生命值20%的伤害").withStyle(ChatFormatting.WHITE)),
+                Component.literal("日常模式").withStyle(ChatFormatting.GREEN).append(Component.literal(" 附加生命上限20%的百分比伤害").withStyle(ChatFormatting.WHITE)),
                 Component.literal("范围模式").withStyle(ChatFormatting.YELLOW).append(Component.literal(" 造成大范围的虚空伤害").withStyle(ChatFormatting.WHITE)),
                 Component.literal("抹杀模式").withStyle(ChatFormatting.DARK_RED).append(Component.literal(" 奉天承运，皇帝诏曰……").withStyle(ChatFormatting.WHITE).append(Component.literal("斩").withStyle(ChatFormatting.DARK_RED)))
         };
@@ -83,15 +85,9 @@ public class GrassSwordItem extends SwordItem {
 
     private static final HowToHurt[] methodToHurt = new HowToHurt[]{
             ((source, victim) -> victim.hurt(source, 1145141)),      // 大数字
-            ((source, victim) -> hurt(victim, source, Float.MAX_VALUE)),         // 重写伤害逻辑
             ((source, victim) -> hurt(victim, source, Float.POSITIVE_INFINITY)), // 重写伤害逻辑
             ((source, victim) -> {victim.setHealth(0);die(victim, source);}),    // 尝试改血
-            ((source, victim) -> victim.hurt(victim.level().damageSources().fellOutOfWorld(), Float.POSITIVE_INFINITY)),
-            ((source, victim) -> victim.hurt(victim.damageSources().genericKill(), Float.POSITIVE_INFINITY)),
-            ((source, victim) -> victim.kill()),                                 // 尝试直接kill
-            ((source, victim) -> {victim.remove(Entity.RemovalReason.KILLED);victim.gameEvent(GameEvent.ENTITY_DIE);}),  // 尝试直接删了
-            ((source, victim) -> victim.discard()),                               // 点击输入文本
-            ((source, victim) -> victim.remove(Entity.RemovalReason.DISCARDED))
+            ((source, victim) -> killEntity(victim, source.getEntity()))        // 冲冲冲
     };
 
     // 注册器
@@ -144,11 +140,13 @@ public class GrassSwordItem extends SwordItem {
                         dragon.hurt(dragon.head, damageSource, Float.MAX_VALUE);
                     }
 
-                    /* 尝试多种击杀方法 */
-                    for (HowToHurt how : methodToHurt) {
-                        if (victim.isDeadOrDying()) break;
-                        how.hurt(damageSource, victim);
-                    }
+                    if (player.isShiftKeyDown())
+                        removeEntity(victim);           // 给你骨灰扬了
+                    else /* 尝试多种击杀方法 */
+                        for (HowToHurt how : methodToHurt) {
+                            if (victim.isDeadOrDying()) break;
+                            how.hurt(damageSource, victim);
+                        }
 
                     return true;
                 }
@@ -157,6 +155,7 @@ public class GrassSwordItem extends SwordItem {
         return super.onLeftClickEntity(stack, player, entity);
     }
 
+    // 挥动逻辑重写
     @Override
     public boolean onEntitySwing(ItemStack stack, LivingEntity entity, InteractionHand hand) {
         if (entity instanceof Player player) {
@@ -171,8 +170,8 @@ public class GrassSwordItem extends SwordItem {
     @Override
     public boolean hurtEnemy(ItemStack stack, LivingEntity victim, LivingEntity attacker) {
         if (getMode(stack) == SwordMode.NORMAL) {
-            float currentHealth = victim.getHealth();
-            float extraDamage = currentHealth * 0.2f;
+            float maxHealth = victim.getMaxHealth();
+            float extraDamage = maxHealth * 0.3f;
             victim.hurt(attacker.damageSources().mobAttack(attacker), extraDamage);
             attacker.heal(1.0F);
         }
@@ -215,7 +214,7 @@ public class GrassSwordItem extends SwordItem {
                 if (isSelected && mode == SwordMode.EXECUTE) {
                     if (!hasModifier) {
                         attr.addTransientModifier(new AttributeModifier(
-                                REACH_MODIFIER, 5.5, AttributeModifier.Operation.ADD_VALUE
+                                REACH_MODIFIER, 12, AttributeModifier.Operation.ADD_VALUE
                         ));
                         if (living instanceof Player player) {
                             player.clearFire();
@@ -475,14 +474,14 @@ public class GrassSwordItem extends SwordItem {
      * 死亡修正函数
      *
      * @param victim        受害者
-     * @param pDamageSource 伤害量
+     * @param source        伤害量
      */
-    private static void die(LivingEntity victim, DamageSource pDamageSource) {
+    private static void die(LivingEntity victim, DamageSource source) {
         if (!victim.isRemoved() && !victim.dead) {
-            Entity entity = pDamageSource.getEntity();
+            Entity entity = source.getEntity();
             LivingEntity livingentity = victim.getKillCredit();
             if (victim.deathScore >= 0 && livingentity != null) {
-                livingentity.awardKillScore(victim, victim.deathScore, pDamageSource);
+                livingentity.awardKillScore(victim, victim.deathScore, source);
             }
 
             if (victim.isSleeping()) {
@@ -495,7 +494,7 @@ public class GrassSwordItem extends SwordItem {
             if (level instanceof ServerLevel serverlevel) {
                 if (entity == null || entity.killedEntity(serverlevel, victim)) {
                     victim.gameEvent(GameEvent.ENTITY_DIE);
-                    victim.dropAllDeathLoot(serverlevel, pDamageSource);
+                    victim.dropAllDeathLoot(serverlevel, source);
                 }
 
                 victim.level().broadcastEntityEvent(victim, (byte) 3);
@@ -503,6 +502,40 @@ public class GrassSwordItem extends SwordItem {
 
             victim.setPose(Pose.DYING);
         }
+    }
+
+    /**
+     * 奇妙击杀函数
+     *
+     * @param victim        受害者
+     * @param sourceEntity  攻击源
+     */
+    public static void killEntity(LivingEntity victim, Entity sourceEntity) {
+        if (sourceEntity instanceof Player player) {
+            victim.setRemainingFireTicks(1000);
+            if (player != null) {
+                victim.hurt(player.damageSources().playerAttack(player), Float.POSITIVE_INFINITY);
+                if (!(victim instanceof Player))
+                    victim.die(player.damageSources().playerAttack(player));
+                victim.setLastHurtByPlayer(player);
+            }
+            victim.setHealth(0);
+            if (!(victim instanceof Player))
+                ListHelper.addEntityToList(victim);
+        }
+    }
+    private void removeEntity(LivingEntity living) {
+        living.setPos(-9999,-9999,-9999);
+        if (!(living instanceof Player)) {
+            ListHelper.addEntityToRemoveList(living);
+            living.discard();
+            living.setInvisible(true);
+            living.removeVehicle();
+            living.remove(Entity.RemovalReason.DISCARDED);
+            living.onRemovedFromLevel();
+            living.setRemoved(Entity.RemovalReason.DISCARDED);
+        }
+        living.setHealth(0);
     }
 
     /**
