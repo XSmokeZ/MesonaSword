@@ -6,6 +6,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
 import com.mojang.math.Transformation;
+import me.mesona.mesona_sword.config.MesonaConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -81,6 +82,8 @@ public class CosmicModel implements BakedModel {
 
     public void renderItem(ItemStack stack, ItemDisplayContext ctx, PoseStack pose, MultiBufferSource source, int light, int overlay) {
         renderWrapped(stack, pose, source, light, overlay, true);
+
+        if (!MesonaConfig.STARFIELD_ENABLED.get()) return;
 
         if (source instanceof MultiBufferSource.BufferSource bs) bs.endBatch();
 

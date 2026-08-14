@@ -11,5 +11,10 @@
   "tooltip.mesona_sword.has_shift_down": "This is a grass, found by you",
 
   "death.attack.mesona_damage": "%1$s was swept into the void by %2$s",
-  "death.attack.mesona_damage.item": "%1$s was swept into the void by %2$s using %3$s"
+  "death.attack.mesona_damage.item": "%1$s was swept into the void by %2$s using %3$s",
+
+  "config.mesona_sword.title": "MesonaSword Configuration",
+  "config.mesona_sword.starfield": "Starry Sky Effect (Currently not supported)",
+  "config.mesona_sword.on": "ON",
+  "config.mesona_sword.off": "OFF"
 }

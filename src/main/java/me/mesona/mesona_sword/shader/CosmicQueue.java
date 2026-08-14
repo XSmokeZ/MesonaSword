@@ -2,6 +2,7 @@ package me.mesona.mesona_sword.shader;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
+import me.mesona.mesona_sword.config.MesonaConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import org.joml.Matrix4f;
@@ -19,6 +20,10 @@ public class CosmicQueue {
 
     public static void renderAll() {
         if (QUEUE.isEmpty()) return;
+        if (!MesonaConfig.STARFIELD_ENABLED.get()) {
+            QUEUE.clear();
+            return;
+        }
 
         Minecraft mc = Minecraft.getInstance();
         MultiBufferSource.BufferSource source = mc.renderBuffers().bufferSource();
