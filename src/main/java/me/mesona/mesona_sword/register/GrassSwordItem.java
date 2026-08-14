@@ -27,6 +27,8 @@ import net.minecraft.world.level.Level;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.phys.AABB;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.entity.PartEntity;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -124,11 +126,11 @@ public class GrassSwordItem extends SwordItem {
             // 分析攻击模式
             switch (mode) {
                 case NORMAL -> {
-                    return false;
+                    return super.onLeftClickEntity(stack, player, entity);
                 }
                 case SWEEP -> {
                     sweepDamage(serverLevel, player, victim, stack);
-                    return false;
+                    return super.onLeftClickEntity(stack, player, entity);
                 }
                 case EXECUTE -> {
                     var damageSource = player.damageSources().source(ModDamage.MESONA_DAMAGE, victim, player);
@@ -152,7 +154,17 @@ public class GrassSwordItem extends SwordItem {
                 }
             }
         }
-        return false;
+        return super.onLeftClickEntity(stack, player, entity);
+    }
+
+    @Override
+    public boolean onEntitySwing(ItemStack stack, LivingEntity entity, InteractionHand hand) {
+        if (entity instanceof Player player) {
+            if ((stack.getItem() instanceof GrassSwordItem) && getMode(stack) == SwordMode.SWEEP) {
+                sweepDamage(player.level(), player, entity, stack);
+            }
+        }
+        return super.onEntitySwing(stack, entity, hand);
     }
 
     // 这是我瞎写的
@@ -194,6 +206,7 @@ public class GrassSwordItem extends SwordItem {
     // 这里用来动态修改玩家触及距离
     @Override
     public void inventoryTick(ItemStack stack, Level level, Entity entity, int slotId, boolean isSelected) {
+        super.inventoryTick(stack, level, entity, slotId, isSelected);
         if (!level.isClientSide && entity instanceof LivingEntity living) {
             SwordMode mode = getMode(stack);
             var attr = living.getAttribute(Attributes.ENTITY_INTERACTION_RANGE);
@@ -204,17 +217,21 @@ public class GrassSwordItem extends SwordItem {
                         attr.addTransientModifier(new AttributeModifier(
                                 REACH_MODIFIER, 5.5, AttributeModifier.Operation.ADD_VALUE
                         ));
+                        if (living instanceof Player player) {
+                            player.clearFire();
+                            player.deathTime = 0;
+                        }
                     }
                 } else if (hasModifier) {
                     attr.removeModifier(REACH_MODIFIER);
                 }
             }
         }
-        super.inventoryTick(stack, level, entity, slotId, isSelected);
     }
 
     // 无附魔光效
     @Override
+    @OnlyIn(Dist.CLIENT)
     public boolean isFoil(@NotNull ItemStack stack) {
         return false;
     }
