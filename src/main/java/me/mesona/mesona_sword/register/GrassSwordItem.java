@@ -29,12 +29,14 @@ import net.minecraft.world.level.Level;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.entity.PartEntity;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -121,7 +123,7 @@ public class GrassSwordItem extends SwordItem {
         if (!level.isClientSide && level instanceof ServerLevel serverLevel && entity instanceof LivingEntity victim) {
             // 分析攻击模式
             switch (mode) {
-                case SWEEP -> sweepDamage(serverLevel, player, victim, stack);
+                case SWEEP -> sweepDamage(serverLevel, player, victim, stack, true);
                 case EXECUTE -> {
                     var damageSource = player.damageSources().source(ModDamage.MESONA_DAMAGE, victim, player);
 
@@ -148,7 +150,7 @@ public class GrassSwordItem extends SwordItem {
     public boolean onEntitySwing(ItemStack stack, LivingEntity entity, InteractionHand hand) {
         if (entity instanceof Player player) {
             if ((stack.getItem() instanceof GrassSwordItem) && getMode(stack) == SwordMode.SWEEP) {
-                sweepDamage(player.level(), player, entity, stack);
+                sweepDamage(player.level(), player, entity, stack, false);
             }
         }
         return super.onEntitySwing(stack, entity, hand);
@@ -163,26 +165,40 @@ public class GrassSwordItem extends SwordItem {
         return true;
     }
 
-    // 用于切换模式
+    // 用于切换模式 / 触发标记爆炸
     @Override
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
-        // 仅在服务端切换模式
-        if(!level.isClientSide && player.isShiftKeyDown()) {
-            SwordMode currentMode = getMode(stack);
-            SwordMode nextMode = currentMode.next();
-            setMode(stack, nextMode);
 
-            // 向玩家发送提示
-            player.displayClientMessage(
-                    Component.literal("").append(stack.getDisplayName()).append(" §r§f已切换至")
-                            .append(nextMode.getName()).withStyle(nextMode.getColor()), true
-            );
+        // 仅在服务端处理
+        if (!level.isClientSide) {
+            // Shift+右键切换模式
+            if (player.isShiftKeyDown()) {
+                SwordMode currentMode = getMode(stack);
+                SwordMode nextMode = currentMode.next();
+                setMode(stack, nextMode);
 
-            // 播放音效
-            level.playSound(null, player.getX(), player.getY(), player.getZ(),
-                    SoundEvents.PLAYER_LEVELUP, player.getSoundSource(), 1.0F, 1.0F);
-            return InteractionResultHolder.sidedSuccess(stack, false);
+                player.displayClientMessage(
+                        Component.literal("").append(stack.getDisplayName()).append(" §r§f已切换至")
+                                .append(nextMode.getName()).withStyle(nextMode.getColor()), true
+                );
+
+                level.playSound(null, player.getX(), player.getY(), player.getZ(),
+                        SoundEvents.PLAYER_LEVELUP, player.getSoundSource(), 1.0F, 1.0F);
+                return InteractionResultHolder.sidedSuccess(stack, false);
+            }
+
+            if (getMode(stack) == SwordMode.SWEEP) {
+                BellMarkAttachment.cleanupIndex(level, (ServerPlayer) player);
+                LivingEntity[] markedTargets = findMarkedTargets(player, level);
+                if (markedTargets.length > 0) {
+                    for (LivingEntity markedTarget : markedTargets) {
+                        BellMarkAttachment.removeMark(markedTarget, (ServerPlayer) player);
+                        sweepDamage(level, player, markedTarget, stack, false);
+                    }
+                    return InteractionResultHolder.sidedSuccess(stack, false);
+                }
+            }
         }
         return InteractionResultHolder.pass(stack);
     }
@@ -213,13 +229,6 @@ public class GrassSwordItem extends SwordItem {
         }
     }
 
-    // 无附魔光效
-    @Override
-    @OnlyIn(Dist.CLIENT)
-    public boolean isFoil(@NotNull ItemStack stack) {
-        return false;
-    }
-
     // 添加描述文本
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context,
@@ -241,7 +250,7 @@ public class GrassSwordItem extends SwordItem {
      * @param sourceEntity  玩家
      * @param centerEntity  中心实体
      */
-    public static void sweepDamage(Level level, LivingEntity sourceEntity, Entity centerEntity, ItemStack stack) {
+    public static void sweepDamage(Level level, LivingEntity sourceEntity, Entity centerEntity, ItemStack stack, boolean markTargets) {
         if (sourceEntity instanceof Player player && !level.isClientSide) {
 
             double sweepRange = 8.0;        // 攻击半径
@@ -281,6 +290,11 @@ public class GrassSwordItem extends SwordItem {
                 if(damageCount < 20)
                     damageCount++;
 
+                // 是否给目标挂上 bell 标记
+                if(markTargets) {
+                    BellMarkAttachment.setMark(target, (ServerPlayer) player);
+                }
+
                 /* 以下是粒子逻辑 */
                 /* Start */
 
@@ -290,7 +304,7 @@ public class GrassSwordItem extends SwordItem {
                 effectList.add(new SweepEffectBatchPacket.EffectData(
                     target.getX(), target.getY(), target.getZ(), randomYaw, scale));
             }
-            // 发送数据
+            // 发送横扫粒子数据
             if (!effectList.isEmpty()) {
                 ((ServerPlayer) player).connection.send(
                     new SweepEffectBatchPacket(effectList));
@@ -303,7 +317,7 @@ public class GrassSwordItem extends SwordItem {
                     SoundEvents.WARDEN_DEATH, player.getSoundSource(), 1.0F, 1.0F);
         }
     }
-
+    
     /**
      * 幻梦模式粒子效果
      * 在生物死亡位置生成樱花花瓣
@@ -527,6 +541,21 @@ public class GrassSwordItem extends SwordItem {
             living.setRemoved(Entity.RemovalReason.DISCARDED);
         }
         living.setHealth(0);
+    }
+
+    /**
+     * 查找指定玩家标记的所有已加载实体
+     *
+     * @param player 玩家
+     * @param level  世界
+     * @return       被标记的实体数组
+     */
+    private static LivingEntity[] findMarkedTargets(Player player, Level level) {
+        List<LivingEntity> markedEntities = BellMarkAttachment.getMarkedEntities(level, player.getUUID());
+        // 过滤掉玩家自身（理论上不会被标记自己，但保险起见）
+        return markedEntities.stream()
+                .filter(e -> e != player)
+                .toArray(LivingEntity[]::new);
     }
 
     /**
