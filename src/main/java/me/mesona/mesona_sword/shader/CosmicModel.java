@@ -36,7 +36,6 @@ public class CosmicModel implements BakedModel {
 
     private static final ItemModelGenerator ITEM_MODEL_GENERATOR = new ItemModelGenerator();
     private static final FaceBakery FACE_BAKERY = new FaceBakery();
-    private static final Transformation FLIP_X = new Transformation(null, null, new Vector3f(-1, 1, 1), null);
 
     private final BakedModel wrapped;
     private final List<ResourceLocation> maskSprite;
@@ -114,10 +113,12 @@ public class CosmicModel implements BakedModel {
             sprites.add(mc.getTextureAtlas(InventoryMenu.BLOCK_ATLAS).apply(res));
         }
 
-        VertexConsumer cons = source.getBuffer(CosmicRenderTypes.COSMIC);
+        // Use no-depth render type when Iris is active to ensure cosmic layer always renders
+        RenderType renderType = IrisCompat.isIrisActive() ? CosmicRenderTypes.COSMIC_NO_DEPTH : CosmicRenderTypes.COSMIC;
+        VertexConsumer cons = source.getBuffer(renderType);
         mc.getItemRenderer().renderQuadList(pose, cons, bakeItem(sprites), stack, light, overlay);
 
-        if (source instanceof MultiBufferSource.BufferSource bs) bs.endBatch(CosmicRenderTypes.COSMIC);
+        if (source instanceof MultiBufferSource.BufferSource bs) bs.endBatch(renderType);
     }
 
     private void renderWrapped(ItemStack stack, PoseStack pose, MultiBufferSource source, int light, int overlay, boolean fabulous) {

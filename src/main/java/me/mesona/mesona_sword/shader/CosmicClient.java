@@ -7,6 +7,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ModelEvent;
 import net.neoforged.neoforge.client.event.RenderFrameEvent;
+import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import net.neoforged.neoforge.client.event.TextureAtlasStitchedEvent;
 
 @EventBusSubscriber(modid = "mesona_sword", value = Dist.CLIENT)
@@ -37,11 +38,26 @@ public class CosmicClient {
 
     @SubscribeEvent
     public static void onRenderFramePre(RenderFrameEvent.Pre event) {
-        CosmicQueue.renderAll();
+        // Only render here if Iris is not active
+        if (!IrisCompat.isIrisActive()) {
+            CosmicQueue.renderAll();
+        }
     }
 
     @SubscribeEvent
     public static void onRenderFramePost(RenderFrameEvent.Post event) {
-        CosmicQueue.renderAll();
+        // Only render here if Iris is not active
+        if (!IrisCompat.isIrisActive()) {
+            CosmicQueue.renderAll();
+        }
+    }
+
+    @SubscribeEvent
+    public static void onRenderLevelStage(RenderLevelStageEvent event) {
+        // When Iris is active, render at AFTER_LEVEL stage
+        // This ensures the cosmic layer renders after Iris has finished its pipeline
+        if (IrisCompat.isIrisActive() && event.getStage() == RenderLevelStageEvent.Stage.AFTER_LEVEL) {
+            CosmicQueue.renderAll();
+        }
     }
 }

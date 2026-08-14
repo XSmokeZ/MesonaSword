@@ -20,4 +20,16 @@ public class CosmicRenderTypes {
                     .setTextureState(new RenderStateShard.TextureStateShard(InventoryMenu.BLOCK_ATLAS, false, false))
                     .createCompositeState(true)
     );
+
+    public static final RenderType COSMIC_NO_DEPTH = RenderType.create(
+            ResourceLocation.fromNamespaceAndPath("mesona_sword", "cosmic_no_depth").toString(),
+            DefaultVertexFormat.BLOCK, VertexFormat.Mode.QUADS, 2097152, true, false,
+            RenderType.CompositeState.builder()
+                    .setShaderState(new RenderStateShard.ShaderStateShard(() -> CosmicShaders.COSMIC_SHADER))
+                    .setDepthTestState(RenderStateShard.NO_DEPTH_TEST)
+                    .setLightmapState(RenderStateShard.LIGHTMAP)
+                    .setTransparencyState(RenderStateShard.TRANSLUCENT_TRANSPARENCY)
+                    .setTextureState(new RenderStateShard.TextureStateShard(InventoryMenu.BLOCK_ATLAS, false, false))
+                    .createCompositeState(true)
+    );
 }
