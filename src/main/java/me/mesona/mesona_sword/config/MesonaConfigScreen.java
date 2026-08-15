@@ -33,21 +33,9 @@ public class MesonaConfigScreen extends Screen {
                 .build());
 
         this.addRenderableWidget(Button.builder(
-                        getButtonText("config.mesona_sword.quick_damage", MesonaConfig.QUICK_DAMAGE.get()),
-                        button -> {
-                            boolean enabled = MesonaConfig.QUICK_DAMAGE.get();
-                            MesonaConfig.QUICK_DAMAGE.set(!enabled);
-                            MesonaConfig.SPEC.save();
-                            button.setMessage(getButtonText("config.mesona_sword.quick_damage", !enabled));
-                        })
-                .pos(centerX - 100, this.height / 2 + 10)
-                .size(200, 20)
-                .build());
-
-        this.addRenderableWidget(Button.builder(
                         Component.translatable("gui.done"),
                         button -> this.onClose())
-                .pos(centerX - 100, this.height / 2 + 50)
+                .pos(centerX - 100, this.height / 2 + 10)
                 .size(200, 20)
                 .build());
     }

@@ -1,7 +1,6 @@
 package me.mesona.mesona_sword.register;
 
 import me.mesona.mesona_sword.MesonaSword;
-import me.mesona.mesona_sword.config.MesonaConfig;
 import me.mesona.mesona_sword.network.SweepEffectBatchPacket;
 import me.mesona.mesona_sword.util.BellMarkUtil;
 import me.mesona.mesona_sword.util.ListHelper;
@@ -120,7 +119,7 @@ public class GrassSwordItem extends SwordItem {
                     var damageSource = player.damageSources().source(ModDamage.MESONA_DAMAGE, victim, player);
 
                     if (!victim.isDeadOrDying()) {
-                        stack.hurtAndBreak(MesonaConfig.QUICK_DAMAGE.get() ? 100 : 1, player, player.getEquipmentSlotForItem(stack));   // 消耗耐久
+                        stack.hurtAndBreak(isQuickDamage(stack) ? 100 : 1, player, player.getEquipmentSlotForItem(stack));   // 消耗耐久
                         spawnExecuteParticles(serverLevel, victim);     // 幻梦异曲：生成樱花花瓣和落叶粒子效果
                     }
 
@@ -258,7 +257,7 @@ public class GrassSwordItem extends SwordItem {
      * 统一应用横扫伤害、击退、粒子、音效和耐久消耗
      */
     private static void applySweepDamage(Level level, Player player, Set<LivingEntity> targets, ItemStack stack) {
-        boolean quickDamage = MesonaConfig.QUICK_DAMAGE.get();
+        boolean quickDamage = isQuickDamage(stack);
         int damageCount = 0;
         List<SweepEffectBatchPacket.EffectData> effectList = new ArrayList<>();
 
@@ -570,6 +569,27 @@ public class GrassSwordItem extends SwordItem {
      */
     private void setMode(ItemStack stack, SwordMode mode) {
         stack.set(ModDataComponent.SWORD_MODE.get(), mode.ordinal());
+    }
+
+    /**
+     * 获取快速耐久损耗状态
+     *
+     * @param stack 这把剑的物品
+     * @return      是否开启快速耐久损耗
+     */
+    public static boolean isQuickDamage(ItemStack stack) {
+        Boolean value = stack.get(ModDataComponent.QUICK_DAMAGE.get());
+        return value != null && value;
+    }
+
+    /**
+     * 设置快速耐久损耗状态
+     *
+     * @param stack 这把剑的物品
+     * @param value 是否开启快速耐久损耗
+     */
+    public static void setQuickDamage(ItemStack stack, boolean value) {
+        stack.set(ModDataComponent.QUICK_DAMAGE.get(), value);
     }
 
     @FunctionalInterface
