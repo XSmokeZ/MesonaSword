@@ -34,6 +34,7 @@ import net.neoforged.neoforge.entity.PartEntity;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class GrassSwordItem extends SwordItem {
 
@@ -172,8 +173,8 @@ public class GrassSwordItem extends SwordItem {
 
             if (getMode(stack) == SwordMode.SWEEP) {
                 BellMarkUtil.cleanupIndex(level, (ServerPlayer) player);
-                LivingEntity[] markedTargets = findMarkedTargets(player, level);
-                if (markedTargets.length > 0) {
+                Set<LivingEntity> markedTargets = findMarkedTargets(player, level);
+                if (!markedTargets.isEmpty()) {
                     Set<LivingEntity> uniqueTargets = new LinkedHashSet<>();
                     for (LivingEntity markedTarget : markedTargets) {
                         BellMarkUtil.removeMark(markedTarget, (ServerPlayer) player);
@@ -181,6 +182,7 @@ public class GrassSwordItem extends SwordItem {
                         collectSweepTargets(level, player, markedTarget, uniqueTargets);
                     }
                     if (!uniqueTargets.isEmpty()) {
+                        uniqueTargets.removeIf(target -> target.getType().getCategory().isFriendly() && !markedTargets.contains(target));
                         applySweepDamage(level, player, uniqueTargets, stack);
                     }
                     return InteractionResultHolder.sidedSuccess(stack, false);
@@ -300,6 +302,8 @@ public class GrassSwordItem extends SwordItem {
         if (sourceEntity instanceof Player player && !level.isClientSide) {
             Set<LivingEntity> targets = new LinkedHashSet<>();
             collectSweepTargets(level, player, centerEntity, targets);
+
+            targets.removeIf(target -> target == player || player.isAlliedTo(target) || target.getType().getCategory().isFriendly());
 
             if (!targets.isEmpty()) {
                 applySweepDamage(level, player, targets, stack);
@@ -539,12 +543,12 @@ public class GrassSwordItem extends SwordItem {
      * @param level  世界
      * @return       被标记的实体数组
      */
-    private static LivingEntity[] findMarkedTargets(Player player, Level level) {
+    private static Set<LivingEntity> findMarkedTargets(Player player, Level level) {
         List<LivingEntity> markedEntities = BellMarkUtil.getMarkedEntities(level, player.getUUID());
         // 过滤掉玩家自身（理论上不会被标记自己，但保险起见）
         return markedEntities.stream()
                 .filter(e -> e != player)
-                .toArray(LivingEntity[]::new);
+                .collect(Collectors.toSet());
     }
 
     /**
