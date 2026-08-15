@@ -1,7 +1,9 @@
 package me.mesona.mesona_sword.register;
 
 import me.mesona.mesona_sword.MesonaSword;
+import me.mesona.mesona_sword.config.MesonaConfig;
 import me.mesona.mesona_sword.network.SweepEffectBatchPacket;
+import me.mesona.mesona_sword.util.BellMarkUtil;
 import me.mesona.mesona_sword.util.ListHelper;
 import me.mesona.mesona_sword.util.TextUtil;
 import net.minecraft.ChatFormatting;
@@ -29,18 +31,10 @@ import net.minecraft.world.level.Level;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.Vec3;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.entity.PartEntity;
-import net.neoforged.neoforge.registries.DeferredItem;
-import net.neoforged.neoforge.registries.DeferredRegister;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 public class GrassSwordItem extends SwordItem {
 
@@ -92,11 +86,6 @@ public class GrassSwordItem extends SwordItem {
             ((source, victim) -> killEntity(victim, source.getEntity()))        // 冲冲冲
     };
 
-    // 注册器
-    public static final DeferredRegister.Items ITEMS =
-            DeferredRegister.createItems(MesonaSword.MODID);
-    public static final DeferredItem<GrassSwordItem> MESONA_SWORD = ITEMS.register("mesona_sword", GrassSwordItem::new);
-
     /**
      * 构造器
      */
@@ -106,7 +95,7 @@ public class GrassSwordItem extends SwordItem {
                 new Properties()
                         .attributes(createAttributes(
                                 ModTier.MESONA,
-                                Float.MAX_VALUE,
+                                3.14f,
                                 0
                         ))
                         .rarity(Rarity.EPIC)
@@ -123,12 +112,15 @@ public class GrassSwordItem extends SwordItem {
         if (!level.isClientSide && level instanceof ServerLevel serverLevel && entity instanceof LivingEntity victim) {
             // 分析攻击模式
             switch (mode) {
-                case SWEEP -> sweepDamage(serverLevel, player, victim, stack, true);
+                case SWEEP -> {
+                    sweepAttack(serverLevel, player, victim, stack);
+                    if(!victim.isDeadOrDying()) BellMarkUtil.setMark(victim, (ServerPlayer) player);
+                }
                 case EXECUTE -> {
                     var damageSource = player.damageSources().source(ModDamage.MESONA_DAMAGE, victim, player);
 
                     if (!victim.isDeadOrDying()) {
-                        stack.hurtAndBreak(20, player, player.getEquipmentSlotForItem(stack));   // 消耗耐久
+                        stack.hurtAndBreak(MesonaConfig.QUICK_DAMAGE.get() ? 100 : 1, player, player.getEquipmentSlotForItem(stack));   // 消耗耐久
                         spawnExecuteParticles(serverLevel, victim);     // 幻梦异曲：生成樱花花瓣和落叶粒子效果
                     }
 
@@ -147,22 +139,13 @@ public class GrassSwordItem extends SwordItem {
 
     // 挥动逻辑重写
     @Override
-    public boolean onEntitySwing(ItemStack stack, LivingEntity entity, InteractionHand hand) {
+    public boolean onEntitySwing(@NotNull ItemStack stack, @NotNull LivingEntity entity, @NotNull InteractionHand hand) {
         if (entity instanceof Player player) {
             if ((stack.getItem() instanceof GrassSwordItem) && getMode(stack) == SwordMode.SWEEP) {
-                sweepDamage(player.level(), player, entity, stack, false);
+                sweepAttack(player.level(), player, player, stack);
             }
         }
         return super.onEntitySwing(stack, entity, hand);
-    }
-
-    // 这是我瞎写的
-    @Override
-    public boolean hurtEnemy(ItemStack stack, LivingEntity victim, LivingEntity attacker) {
-        if (getMode(stack) == SwordMode.NORMAL) {
-            attacker.heal(1.0F);
-        }
-        return true;
     }
 
     // 用于切换模式 / 触发标记
@@ -189,12 +172,17 @@ public class GrassSwordItem extends SwordItem {
             }
 
             if (getMode(stack) == SwordMode.SWEEP) {
-                BellMarkAttachment.cleanupIndex(level, (ServerPlayer) player);
+                BellMarkUtil.cleanupIndex(level, (ServerPlayer) player);
                 LivingEntity[] markedTargets = findMarkedTargets(player, level);
                 if (markedTargets.length > 0) {
+                    Set<LivingEntity> uniqueTargets = new LinkedHashSet<>();
                     for (LivingEntity markedTarget : markedTargets) {
-                        BellMarkAttachment.removeMark(markedTarget, (ServerPlayer) player);
-                        sweepDamage(level, player, markedTarget, stack, false);
+                        BellMarkUtil.removeMark(markedTarget, (ServerPlayer) player);
+                        player.heal(1.0f);
+                        collectSweepTargets(level, player, markedTarget, uniqueTargets);
+                    }
+                    if (!uniqueTargets.isEmpty()) {
+                        applySweepDamage(level, player, uniqueTargets, stack);
                     }
                     return InteractionResultHolder.sidedSuccess(stack, false);
                 }
@@ -205,22 +193,18 @@ public class GrassSwordItem extends SwordItem {
 
     // 这里用来动态修改玩家触及距离
     @Override
-    public void inventoryTick(ItemStack stack, Level level, Entity entity, int slotId, boolean isSelected) {
+    public void inventoryTick(ItemStack stack, Level level, @NotNull Entity entity, int slotId, boolean isSelected) {
         super.inventoryTick(stack, level, entity, slotId, isSelected);
         if (!level.isClientSide && entity instanceof LivingEntity living) {
             SwordMode mode = getMode(stack);
             var attr = living.getAttribute(Attributes.ENTITY_INTERACTION_RANGE);
             if (attr != null) {
                 boolean hasModifier = attr.getModifier(REACH_MODIFIER) != null;
-                if (isSelected && mode == SwordMode.EXECUTE) {
+                if (isSelected && mode == SwordMode.SWEEP) {
                     if (!hasModifier) {
                         attr.addTransientModifier(new AttributeModifier(
-                                REACH_MODIFIER, 2, AttributeModifier.Operation.ADD_VALUE
+                                REACH_MODIFIER, 8.2, AttributeModifier.Operation.ADD_VALUE
                         ));
-                        if (living instanceof Player player) {
-                            player.clearFire();
-                            player.deathTime = 0;
-                        }
                     }
                 } else if (hasModifier) {
                     attr.removeModifier(REACH_MODIFIER);
@@ -244,77 +228,83 @@ public class GrassSwordItem extends SwordItem {
     }
 
     /**
+     * 收集指定中心实体周围的横扫目标
+     */
+    private static void collectSweepTargets(Level level, Player player, Entity centerEntity, Set<LivingEntity> targetSet) {
+        double sweepRange = 8.0;
+
+        double centerX = centerEntity.getX();
+        double centerY = centerEntity.getY() + centerEntity.getEyeHeight();
+        double centerZ = centerEntity.getZ();
+
+        AABB sweepArea = new AABB(
+                centerX - sweepRange, centerY - sweepRange, centerZ - sweepRange,
+                centerX + sweepRange, centerY + sweepRange, centerZ + sweepRange
+        );
+
+        for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, sweepArea)) {
+            if (player.isAlliedTo(target) ||
+                centerEntity.distanceToSqr(target) > sweepRange * sweepRange ||
+                target == player ||
+                target instanceof ArmorStand armorStand && armorStand.isMarker() ||
+                target.isDeadOrDying()
+            ) continue;
+
+            targetSet.add(target);
+        }
+    }
+
+    /**
+     * 统一应用横扫伤害、击退、粒子、音效和耐久消耗
+     */
+    private static void applySweepDamage(Level level, Player player, Set<LivingEntity> targets, ItemStack stack) {
+        boolean quickDamage = MesonaConfig.QUICK_DAMAGE.get();
+        int damageCount = 0;
+        List<SweepEffectBatchPacket.EffectData> effectList = new ArrayList<>();
+
+        for (LivingEntity target : targets) {
+            target.hurt(player.damageSources().fellOutOfWorld(), 100.0F);
+
+            target.knockback(0.6F,
+                Mth.sin(player.getYRot() * ((float) Math.PI / 180F)),
+                -Mth.cos(player.getYRot() * ((float) Math.PI / 180F)));
+
+            if (damageCount < (quickDamage ? 20 : 400))
+                damageCount += quickDamage ? 1 : 5;
+
+            float randomYaw = player.level().getRandom().nextFloat() * 360f;
+            float scale = (target.getBbWidth() + target.getBbHeight());
+            effectList.add(new SweepEffectBatchPacket.EffectData(
+                target.getX(), target.getY(), target.getZ(), randomYaw, scale));
+        }
+
+        if (!effectList.isEmpty()) {
+            ((ServerPlayer) player).connection.send(
+                new SweepEffectBatchPacket(effectList));
+        }
+
+        if (!player.isCreative())
+            stack.hurtAndBreak(damageCount, player, player.getEquipmentSlotForItem(stack));
+
+        level.playSound(null, player.getX(), player.getY(), player.getZ(),
+            SoundEvents.WARDEN_DEATH, player.getSoundSource(), 1.0F, 1.0F);
+    }
+
+    /**
      * 横扫伤害
-     * 
+     *
      * @param level         世界
      * @param sourceEntity  玩家
      * @param centerEntity  中心实体
      */
-    public static void sweepDamage(Level level, LivingEntity sourceEntity, Entity centerEntity, ItemStack stack, boolean markTargets) {
+    public static void sweepAttack(Level level, LivingEntity sourceEntity, Entity centerEntity, ItemStack stack) {
         if (sourceEntity instanceof Player player && !level.isClientSide) {
+            Set<LivingEntity> targets = new LinkedHashSet<>();
+            collectSweepTargets(level, player, centerEntity, targets);
 
-            double sweepRange = 8.0;        // 攻击半径
-
-            // 设置中心位置
-            double centerX = centerEntity.getX();
-            double centerY = centerEntity.getY() + centerEntity.getEyeHeight();
-            double centerZ = centerEntity.getZ();
-
-            // 构建范围
-            AABB sweepArea = new AABB(
-                    centerX - sweepRange, centerY - sweepRange, centerZ - sweepRange,
-                    centerX + sweepRange, centerY + sweepRange, centerZ + sweepRange
-            );
-
-            int damageCount = 0;
-            boolean flag = false;
-            List<SweepEffectBatchPacket.EffectData> effectList = new ArrayList<>();
-
-            for (LivingEntity target : level.getEntitiesOfClass(LivingEntity.class, sweepArea)) {
-
-                if (player.isAlliedTo(target) ||
-                    player.distanceToSqr(target) > sweepRange * sweepRange ||
-                    target == player ||
-                    target instanceof ArmorStand armorStand && armorStand.isMarker() ||     // 防止友伤
-                    target.isDeadOrDying()                                                  // 距离检查
-                    ) continue;
-
-                target.hurt(player.damageSources().fellOutOfWorld(), 200.0F);      // 造成伤害
-                flag = true;
-
-                target.knockback(0.6F,
-                    Mth.sin(player.getYRot() * ((float) Math.PI / 180F)),
-                    -Mth.cos(player.getYRot() * ((float) Math.PI / 180F)));           // 击退
-
-                // 统计要消耗的耐久
-                if(damageCount < 20)
-                    damageCount++;
-
-                // 是否给目标挂上 bell 标记
-                if(markTargets) {
-                    BellMarkAttachment.setMark(target, (ServerPlayer) player);
-                }
-
-                /* 以下是粒子逻辑 */
-                /* Start */
-
-                // 收集数据
-                float randomYaw = player.level().getRandom().nextFloat() * 360f;
-                float scale = (float) ((target.getBbWidth() + target.getBbHeight()));
-                effectList.add(new SweepEffectBatchPacket.EffectData(
-                    target.getX(), target.getY(), target.getZ(), randomYaw, scale));
+            if (!targets.isEmpty()) {
+                applySweepDamage(level, player, targets, stack);
             }
-            // 发送横扫粒子数据
-            if (!effectList.isEmpty()) {
-                ((ServerPlayer) player).connection.send(
-                    new SweepEffectBatchPacket(effectList));
-            }
-            /* End */
-
-            stack.hurtAndBreak(damageCount, player, player.getEquipmentSlotForItem(stack));          // 消耗耐久
-
-            if (flag) level.playSound(null, player.getX(), player.getY(), player.getZ(),    // 播放音效
-                    SoundEvents.WARDEN_DEATH, player.getSoundSource(), 1.0F, 1.0F);
         }
     }
     
@@ -551,7 +541,7 @@ public class GrassSwordItem extends SwordItem {
      * @return       被标记的实体数组
      */
     private static LivingEntity[] findMarkedTargets(Player player, Level level) {
-        List<LivingEntity> markedEntities = BellMarkAttachment.getMarkedEntities(level, player.getUUID());
+        List<LivingEntity> markedEntities = BellMarkUtil.getMarkedEntities(level, player.getUUID());
         // 过滤掉玩家自身（理论上不会被标记自己，但保险起见）
         return markedEntities.stream()
                 .filter(e -> e != player)

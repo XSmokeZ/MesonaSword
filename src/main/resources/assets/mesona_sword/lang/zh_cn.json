@@ -1,9 +1,10 @@
 {
   "item.mesona_sword.mesona_sword": "§a凉粉草",
+  "itemGroup.mesona_sword": "凉粉草",
 
   "tooltip.mesona_sword.infinity": "无限",
-  "tooltip.mesona_sword.big_number": "总之就是伤害很高",
-  "tooltip.mesona_sword.void_damage": "200",
+  "tooltip.mesona_sword.big_number": "10%%目标最大生命",
+  "tooltip.mesona_sword.void_damage": "100",
   "tooltip.mesona_sword.attack_damage.desc": " 攻击伤害",
 
   "tooltip.mesona_sword.desc": "§7这是一株草§r ",
@@ -15,8 +16,9 @@
 
   "config.mesona_sword.title": "MesonaSword 配置",
   "config.mesona_sword.starfield": "星空效果 (不兼容TAA)",
-  "config.mesona_sword.on": "开启",
-  "config.mesona_sword.off": "关闭",
+  "config.mesona_sword.quick_damage": "快速耐久消耗",
+  "config.mesona_sword.on": "已开启",
+  "config.mesona_sword.off": "已关闭",
 
   "subtitle.mesona_sword.my_custom_sound": "BellSound"
 }

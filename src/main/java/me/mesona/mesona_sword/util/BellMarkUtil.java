@@ -1,6 +1,5 @@
-package me.mesona.mesona_sword.register;
+package me.mesona.mesona_sword.util;
 
-import com.mojang.serialization.Codec;
 import me.mesona.mesona_sword.MesonaSword;
 import me.mesona.mesona_sword.network.BellMarkSyncPacket;
 import net.minecraft.core.UUIDUtil;
@@ -16,7 +15,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
-public class BellMarkAttachment {
+public class BellMarkUtil {
     public static final DeferredRegister<AttachmentType<?>> ATTACHMENT_TYPES =
             DeferredRegister.create(NeoForgeRegistries.ATTACHMENT_TYPES, MesonaSword.MODID);
 

@@ -21,27 +21,39 @@ public class MesonaConfigScreen extends Screen {
         int centerX = this.width / 2;
 
         this.addRenderableWidget(Button.builder(
-                getStarfieldButtonText(),
+                getButtonText("config.mesona_sword.starfield", MesonaConfig.STARFIELD_ENABLED.get()),
                 button -> {
-                    MesonaConfig.STARFIELD_ENABLED.set(!MesonaConfig.STARFIELD_ENABLED.get());
+                    boolean enabled = MesonaConfig.STARFIELD_ENABLED.get();
+                    MesonaConfig.STARFIELD_ENABLED.set(!enabled);
                     MesonaConfig.SPEC.save();
-                    button.setMessage(getStarfieldButtonText());
+                    button.setMessage(getButtonText("config.mesona_sword.starfield", !enabled));
                 })
-                .pos(centerX - 100, this.height / 2 - 20)
+                .pos(centerX - 100, this.height / 2 - 30)
                 .size(200, 20)
                 .build());
 
         this.addRenderableWidget(Button.builder(
-                Component.translatable("gui.done"),
-                button -> this.onClose())
-                .pos(centerX - 100, this.height / 2 + 20)
+                        getButtonText("config.mesona_sword.quick_damage", MesonaConfig.QUICK_DAMAGE.get()),
+                        button -> {
+                            boolean enabled = MesonaConfig.QUICK_DAMAGE.get();
+                            MesonaConfig.QUICK_DAMAGE.set(!enabled);
+                            MesonaConfig.SPEC.save();
+                            button.setMessage(getButtonText("config.mesona_sword.quick_damage", !enabled));
+                        })
+                .pos(centerX - 100, this.height / 2 + 10)
+                .size(200, 20)
+                .build());
+
+        this.addRenderableWidget(Button.builder(
+                        Component.translatable("gui.done"),
+                        button -> this.onClose())
+                .pos(centerX - 100, this.height / 2 + 50)
                 .size(200, 20)
                 .build());
     }
 
-    private Component getStarfieldButtonText() {
-        boolean enabled = MesonaConfig.STARFIELD_ENABLED.get();
-        return Component.translatable("config.mesona_sword.starfield")
+    private Component getButtonText(String key, boolean enabled) {
+        return Component.translatable(key)
                 .append(": ")
                 .append(Component.translatable(enabled ? "config.mesona_sword.on" : "config.mesona_sword.off"));
     }

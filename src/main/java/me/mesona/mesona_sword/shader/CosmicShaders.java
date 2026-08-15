@@ -12,7 +12,9 @@ import net.neoforged.neoforge.client.event.RegisterShadersEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@EventBusSubscriber(modid = "mesona_sword", value = Dist.CLIENT)
+import static me.mesona.mesona_sword.MesonaSword.MODID;
+
+@EventBusSubscriber(modid = MODID, value = Dist.CLIENT)
 public class CosmicShaders {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CosmicShaders.class);
@@ -26,7 +28,7 @@ public class CosmicShaders {
     public static void onRegisterShaders(RegisterShadersEvent event) {
         try {
             event.registerShader(new ShaderInstance(event.getResourceProvider(),
-                    ResourceLocation.fromNamespaceAndPath("mesona_sword", "cosmic"), DefaultVertexFormat.BLOCK), shader -> {
+                    ResourceLocation.fromNamespaceAndPath(MODID, "cosmic"), DefaultVertexFormat.BLOCK), shader -> {
                 COSMIC_SHADER = shader;
                 uTime = shader.getUniform("time");
                 uYaw = shader.getUniform("yaw");

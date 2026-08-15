@@ -1,9 +1,10 @@
 {
   "item.mesona_sword.mesona_sword": "§aGrass Sword",
+  "itemGroup.mesona_sword": "Mesona Sword",
 
   "tooltip.mesona_sword.infinity": " Infinity",
-  "tooltip.mesona_sword.big_number": "In general, the damage is high high",
-  "tooltip.mesona_sword.void_damage": "200",
+  "tooltip.mesona_sword.big_number": "10%% maxHealth of the Target",
+  "tooltip.mesona_sword.void_damage": "100",
   "tooltip.mesona_sword.attack_damage.desc": "Attack Damage",
 
   "tooltip.mesona_sword.desc": "§7This is a grass§r ",
@@ -15,6 +16,7 @@
 
   "config.mesona_sword.title": "MesonaSword Configuration",
   "config.mesona_sword.starfield": "Starry Sky Effect (Not compatible with TAA)",
+  "config.mesona_sword.quick_damage": "Quick Use Damage Of The Sword",
   "config.mesona_sword.on": "ON",
   "config.mesona_sword.off": "OFF",
 
