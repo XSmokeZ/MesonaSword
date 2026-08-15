@@ -16,5 +16,7 @@
   "config.mesona_sword.title": "MesonaSword Configuration",
   "config.mesona_sword.starfield": "Starry Sky Effect (Not compatible with TAA)",
   "config.mesona_sword.on": "ON",
-  "config.mesona_sword.off": "OFF"
+  "config.mesona_sword.off": "OFF",
+
+  "subtitle.mesona_sword.my_custom_sound": "bell_sound"
 }
