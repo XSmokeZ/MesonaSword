@@ -10,7 +10,9 @@ import net.neoforged.neoforge.client.event.RenderFrameEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import net.neoforged.neoforge.client.event.TextureAtlasStitchedEvent;
 
-@EventBusSubscriber(modid = "mesona_sword", value = Dist.CLIENT)
+import static me.mesona.mesona_sword.MesonaSword.MODID;
+
+@EventBusSubscriber(modid = MODID, value = Dist.CLIENT)
 public class CosmicClient {
 
     public static boolean inventoryRender = false;
@@ -25,7 +27,7 @@ public class CosmicClient {
         if (!event.getAtlas().location().getPath().equals("textures/atlas/blocks.png")) return;
 
         for (int i = 0; i < 10; i++) {
-            ResourceLocation loc = ResourceLocation.fromNamespaceAndPath("mesona_sword", "misc/cosmic/cosmic_" + i);
+            ResourceLocation loc = ResourceLocation.fromNamespaceAndPath(MODID, "misc/cosmic/cosmic_" + i);
             TextureAtlasSprite sprite = event.getAtlas().getSprite(loc);
             if (sprite == null) continue;
             CosmicShaders.COSMIC_UVS[i * 4] = sprite.getU0();

@@ -7,7 +7,7 @@
 # Gradle build folder
 build
 
-neoforge
+net
 
 # IntelliJ
 out/

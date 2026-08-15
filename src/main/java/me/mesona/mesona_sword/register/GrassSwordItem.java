@@ -128,7 +128,7 @@ public class GrassSwordItem extends SwordItem {
                     var damageSource = player.damageSources().source(ModDamage.MESONA_DAMAGE, victim, player);
 
                     if (!victim.isDeadOrDying()) {
-                        stack.hurtAndBreak(5, player, player.getEquipmentSlotForItem(stack));   // 消耗耐久
+                        stack.hurtAndBreak(20, player, player.getEquipmentSlotForItem(stack));   // 消耗耐久
                         spawnExecuteParticles(serverLevel, victim);     // 幻梦异曲：生成樱花花瓣和落叶粒子效果
                     }
 
@@ -165,7 +165,7 @@ public class GrassSwordItem extends SwordItem {
         return true;
     }
 
-    // 用于切换模式 / 触发标记爆炸
+    // 用于切换模式 / 触发标记
     @Override
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);

@@ -21,14 +21,11 @@ public class IrisCompat {
                 available = true;
                 apiV0 = true;
             } catch (Throwable ignored2) {
+                System.out.println("MesonaSword: Iris API v0 not found");
             }
         }
         IRIS_AVAILABLE = available;
         IRIS_API_V0_AVAILABLE = apiV0;
-    }
-
-    public static boolean isIrisAvailable() {
-        return IRIS_AVAILABLE;
     }
 
     public static boolean isIrisActive() {
@@ -58,13 +55,5 @@ public class IrisCompat {
                  GROUND, FIXED -> true;
             default -> false;
         };
-    }
-
-    public static boolean isShaderActive() {
-        return isIrisActive();
-    }
-
-    public static boolean isApiV0Available() {
-        return IRIS_API_V0_AVAILABLE;
     }
 }

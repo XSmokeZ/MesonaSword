@@ -31,10 +31,6 @@ public class BellMarkAttachment {
     // 全局索引：玩家UUID -> 该玩家标记的所有实体网络ID集合
     private static final Map<UUID, Set<Integer>> PLAYER_MARK_INDEX = new ConcurrentHashMap<>();
 
-    public static boolean hasMark(LivingEntity entity) {
-        return entity.hasData(BELL_MARK);
-    }
-
     public static void setMark(LivingEntity entity, ServerPlayer player) {
         UUID playerId = player.getUUID();
 
@@ -76,18 +72,6 @@ public class BellMarkAttachment {
         }
 
         player.connection.send(new BellMarkSyncPacket(BellMarkSyncPacket.Action.REMOVE, List.of(entity.getId())));
-    }
-
-    public static UUID getMarkPlayer(LivingEntity entity) {
-        return entity.getData(BELL_MARK);
-    }
-
-    /**
-     * 获取指定玩家标记的所有实体网络ID
-     */
-    public static Set<Integer> getMarkedEntityIds(UUID playerId) {
-        Set<Integer> set = PLAYER_MARK_INDEX.get(playerId);
-        return set != null ? Set.copyOf(set) : Set.of();
     }
 
     /**
@@ -132,15 +116,5 @@ public class BellMarkAttachment {
         if (set.isEmpty()) {
             PLAYER_MARK_INDEX.remove(playerId);
         }
-    }
-
-    /**
-     * 向玩家发送完整的标记同步包
-     */
-    public static void syncToPlayer(ServerPlayer player) {
-        UUID playerId = player.getUUID();
-        Set<Integer> set = PLAYER_MARK_INDEX.get(playerId);
-        List<Integer> ids = set != null ? new ArrayList<>(set) : List.of();
-        player.connection.send(new BellMarkSyncPacket(BellMarkSyncPacket.Action.SYNC, ids));
     }
 }

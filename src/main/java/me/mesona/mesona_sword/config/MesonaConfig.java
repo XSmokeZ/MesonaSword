@@ -11,7 +11,7 @@ public class MesonaConfig {
         ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
         STARFIELD_ENABLED = builder
                 .comment("Enable or disable the starry sky (cosmic) effect on the sword")
-                .define("starfieldEnabled", false);
+                .define("starfieldEnabled", true);
         SPEC = builder.build();
     }
 }

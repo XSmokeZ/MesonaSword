@@ -14,7 +14,7 @@
   "death.attack.mesona_damage.item": "%1$s 被 %2$s 用 %3$s 斩入了虚空",
 
   "config.mesona_sword.title": "MesonaSword 配置",
-  "config.mesona_sword.starfield": "星空效果 (因为不兼容光影，目前已不支持)",
+  "config.mesona_sword.starfield": "星空效果 (不兼容TAA)",
   "config.mesona_sword.on": "开启",
   "config.mesona_sword.off": "关闭"
 }

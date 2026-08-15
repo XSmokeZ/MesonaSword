@@ -4,7 +4,6 @@ import me.mesona.mesona_sword.config.MesonaConfig;
 import me.mesona.mesona_sword.config.MesonaConfigScreen;
 import me.mesona.mesona_sword.network.BellMarkSyncPacket;
 import me.mesona.mesona_sword.network.SweepEffectBatchPacket;
-import me.mesona.mesona_sword.register.BellMarkAttachment;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.config.ModConfig;
@@ -24,7 +23,7 @@ public class Registry {
     }
 
     private static void registerPackets(RegisterPayloadHandlersEvent event) {
-        event.registrar("0.2")
+        event.registrar("0.4")
                 .playToClient(SweepEffectBatchPacket.TYPE, SweepEffectBatchPacket.STREAM_CODEC, SweepEffectBatchPacket::handle)
                 .playToClient(BellMarkSyncPacket.TYPE, BellMarkSyncPacket.STREAM_CODEC, BellMarkSyncPacket::handle);
     }

@@ -14,7 +14,7 @@
   "death.attack.mesona_damage.item": "%1$s was swept into the void by %2$s using %3$s",
 
   "config.mesona_sword.title": "MesonaSword Configuration",
-  "config.mesona_sword.starfield": "Starry Sky Effect (Currently not supported)",
+  "config.mesona_sword.starfield": "Starry Sky Effect (Not compatible with TAA)",
   "config.mesona_sword.on": "ON",
   "config.mesona_sword.off": "OFF"
 }
