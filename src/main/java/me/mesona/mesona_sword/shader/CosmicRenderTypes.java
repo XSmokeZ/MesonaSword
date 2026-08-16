@@ -7,10 +7,12 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.inventory.InventoryMenu;
 
+import static me.mesona.mesona_sword.MesonaSword.MODID;
+
 public class CosmicRenderTypes {
 
     public static final RenderType COSMIC = RenderType.create(
-            ResourceLocation.fromNamespaceAndPath("mesona_sword", "cosmic").toString(),
+            ResourceLocation.fromNamespaceAndPath(MODID, "cosmic").toString(),
             DefaultVertexFormat.BLOCK, VertexFormat.Mode.QUADS, 2097152, true, false,
             RenderType.CompositeState.builder()
                     .setShaderState(new RenderStateShard.ShaderStateShard(() -> CosmicShaders.COSMIC_SHADER))
@@ -22,7 +24,7 @@ public class CosmicRenderTypes {
     );
 
     public static final RenderType COSMIC_NO_DEPTH = RenderType.create(
-            ResourceLocation.fromNamespaceAndPath("mesona_sword", "cosmic_no_depth").toString(),
+            ResourceLocation.fromNamespaceAndPath(MODID, "cosmic_no_depth").toString(),
             DefaultVertexFormat.BLOCK, VertexFormat.Mode.QUADS, 2097152, true, false,
             RenderType.CompositeState.builder()
                     .setShaderState(new RenderStateShard.ShaderStateShard(() -> CosmicShaders.COSMIC_SHADER))

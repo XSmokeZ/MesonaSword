@@ -29,6 +29,7 @@ public class CosmicClient {
         for (int i = 0; i < 10; i++) {
             ResourceLocation loc = ResourceLocation.fromNamespaceAndPath(MODID, "misc/cosmic/cosmic_" + i);
             TextureAtlasSprite sprite = event.getAtlas().getSprite(loc);
+
             if (sprite == null) continue;
             CosmicShaders.COSMIC_UVS[i * 4] = sprite.getU0();
             CosmicShaders.COSMIC_UVS[i * 4 + 1] = sprite.getV0();

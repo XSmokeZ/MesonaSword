@@ -50,5 +50,6 @@ public class CosmicShaders {
         if (uScale != null) uScale.set(scale);
         if (uOpacity != null) uOpacity.set(opacity);
         if (uUVs != null) uUVs.set(COSMIC_UVS);
+        SodiumCompat.markSpritesActive(COSMIC_SPRITES);
     }
 }
