@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static me.mesona.mesona_sword.MesonaSword.MODID;
+import static me.mesona.mesona_sword.shader.SodiumCompat.isSodiumAvailable;
 
 @EventBusSubscriber(modid = MODID, value = Dist.CLIENT)
 public class CosmicShaders {
@@ -50,6 +51,6 @@ public class CosmicShaders {
         if (uScale != null) uScale.set(scale);
         if (uOpacity != null) uOpacity.set(opacity);
         if (uUVs != null) uUVs.set(COSMIC_UVS);
-        SodiumCompat.markSpritesActive(COSMIC_SPRITES);
+        if (isSodiumAvailable()) SodiumCompat.markSpritesActive(COSMIC_SPRITES);
     }
 }
