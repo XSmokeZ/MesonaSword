@@ -2,12 +2,11 @@ package me.mesona.mesona_sword.shader;
 
 import com.mojang.blaze3d.shaders.Uniform;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterShadersEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,7 +14,6 @@ import org.slf4j.LoggerFactory;
 import static me.mesona.mesona_sword.MesonaSword.MODID;
 import static me.mesona.mesona_sword.shader.SodiumCompat.isSodiumAvailable;
 
-@EventBusSubscriber(modid = MODID, value = Dist.CLIENT)
 public class CosmicShaders {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CosmicShaders.class);
@@ -28,8 +26,11 @@ public class CosmicShaders {
     @SubscribeEvent
     public static void onRegisterShaders(RegisterShadersEvent event) {
         try {
-            event.registerShader(new ShaderInstance(event.getResourceProvider(),
-                    ResourceLocation.fromNamespaceAndPath(MODID, "cosmic"), DefaultVertexFormat.BLOCK), shader -> {
+            event.registerShader(new ShaderInstance(
+                    event.getResourceProvider(),
+                    ResourceLocation.fromNamespaceAndPath(MODID, "cosmic"),
+                    DefaultVertexFormat.BLOCK
+            ), shader -> {
                 COSMIC_SHADER = shader;
                 uTime = shader.getUniform("time");
                 uYaw = shader.getUniform("yaw");

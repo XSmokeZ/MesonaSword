@@ -8,9 +8,7 @@ import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
@@ -20,7 +18,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
-@EventBusSubscriber(modid = MesonaSword.MODID, value = Dist.CLIENT)
 public class BellMarkRenderer {
 
     private static final ResourceLocation BELL_TEXTURE =

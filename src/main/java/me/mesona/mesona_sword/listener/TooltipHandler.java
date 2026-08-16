@@ -7,20 +7,15 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
 
 import java.util.List;
 
-import static me.mesona.mesona_sword.MesonaSword.MODID;
-
-@EventBusSubscriber(modid = MODID, value = Dist.CLIENT)
 public class TooltipHandler {
 
     @SubscribeEvent
-    public static void onTooltipEvent(ItemTooltipEvent event) {
+    public static void onItemTooltip(ItemTooltipEvent event) {
 
         ItemStack stack = event.getItemStack();
 

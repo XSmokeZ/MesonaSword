@@ -6,9 +6,7 @@ import me.mesona.mesona_sword.MesonaSword;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
@@ -18,7 +16,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-@EventBusSubscriber(modid = MesonaSword.MODID, value = Dist.CLIENT)
 public class SweepEffectRenderer {
 
     private static final int TOTAL_FRAMES = 6; // 总帧数

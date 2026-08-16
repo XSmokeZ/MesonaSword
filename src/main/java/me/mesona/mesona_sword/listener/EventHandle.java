@@ -14,11 +14,6 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.tick.EntityTickEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-
-import static me.mesona.mesona_sword.MesonaSword.MODID;
-
-@EventBusSubscriber(modid = MODID)
 public class EventHandle {
 
     @SubscribeEvent
