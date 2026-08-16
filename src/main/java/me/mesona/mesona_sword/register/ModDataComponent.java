@@ -9,24 +9,20 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 public class ModDataComponent {
-    public static final DeferredRegister.DataComponents COMPONENTS =
-            DeferredRegister.createDataComponents(Registries.DATA_COMPONENT_TYPE, MesonaSword.MODID);
+    public static final DeferredRegister<DataComponentType<?>> COMPONENTS =
+            DeferredRegister.create(Registries.DATA_COMPONENT_TYPE, MesonaSword.MODID);
 
     // 注册剑模式数据组件（整数枚举）
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<Integer>> SWORD_MODE =
-            COMPONENTS.registerComponentType(
-                    "sword_mode",
-                    integerBuilder -> integerBuilder
-                            .persistent(Codec.INT)
-                            .networkSynchronized(ByteBufCodecs.INT)
-            );
+            COMPONENTS.register("sword_mode", () -> DataComponentType.<Integer>builder()
+                    .persistent(Codec.INT)
+                    .networkSynchronized(ByteBufCodecs.INT)
+                    .build());
 
     // 注册快速耐久损耗数据组件（布尔值）
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<Boolean>> QUICK_DAMAGE =
-            COMPONENTS.registerComponentType(
-                    "quick_damage",
-                    builder -> builder
-                            .persistent(Codec.BOOL)
-                            .networkSynchronized(ByteBufCodecs.BOOL)
-            );
+            COMPONENTS.register("quick_damage", () -> DataComponentType.<Boolean>builder()
+                    .persistent(Codec.BOOL)
+                    .networkSynchronized(ByteBufCodecs.BOOL)
+                    .build());
 }

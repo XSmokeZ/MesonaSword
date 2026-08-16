@@ -139,13 +139,13 @@ public class GrassSwordItem extends SwordItem {
 
     // 挥动逻辑重写
     @Override
-    public boolean onEntitySwing(@NotNull ItemStack stack, @NotNull LivingEntity entity, @NotNull InteractionHand hand) {
+    public boolean onEntitySwing(@NotNull ItemStack stack, @NotNull LivingEntity entity) {
         if (entity instanceof Player player) {
             if ((stack.getItem() instanceof GrassSwordItem) && getMode(stack) == SwordMode.SWEEP) {
                 sweepAttack(player.level(), player, player, stack);
             }
         }
-        return super.onEntitySwing(stack, entity, hand);
+        return super.onEntitySwing(stack, entity);
     }
 
     // 用于切换模式 / 触发标记
