@@ -222,6 +222,8 @@ public class GrassSwordItem extends SwordItem {
         if(flag.hasShiftDown()) {
             tooltipComponents.add(Component.literal(TextUtil.makeFabulous(I18n.get("tooltip.mesona_sword.has_shift_down"))));
             Collections.addAll(tooltipComponents, SwordMode.DESCRIPTION);
+        } else if(flag.hasAltDown()) {
+            tooltipComponents.add(Component.literal(I18n.get("tooltip.mesona_sword.has_alt_down")).withStyle(ChatFormatting.DARK_GRAY));
         } else {
             tooltipComponents.add(Component.literal(I18n.get("tooltip.mesona_sword.desc")).append(Component.literal(currentMode.getName()).withStyle(currentMode.getColor())));
             tooltipComponents.add(Component.literal(I18n.get("tooltip.mesona_sword.display_shift")));

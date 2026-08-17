@@ -17,7 +17,8 @@ public final class ModTier {
                     Items.SHORT_GRASS,
                     Items.TALL_GRASS,
                     Items.FERN,
-                    Items.LARGE_FERN
+                    Items.LARGE_FERN,
+                    Items.SEAGRASS
             )
     );
 }
